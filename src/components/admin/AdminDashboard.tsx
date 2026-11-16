@@ -29,6 +29,7 @@ import {
 import { db } from '../../services/db';
 import { useAuth } from '../../context/AuthContext';
 import { AdminLoginPage } from './AdminLoginPage';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import {
   Job,
   Company,
@@ -54,6 +55,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
     }
   };
   const [activeTab, setActiveTab] = useState('overview');
+  const [isVerifying, setIsVerifying] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
   const [jobs, setJobs] = useState<Job[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -86,10 +89,101 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
     setOtpStats(db.getOtpAdminStats());
   };
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const verifyAdminSession = async () => {
+      // 1. In-memory role check
+      if (!user || user.role !== 'super_admin') {
+        if (isMounted) {
+          setIsAuthorized(false);
+          setIsVerifying(false);
+        }
+        return;
+      }
+
+      // 2. Authoritative check against Supabase Auth & PostgreSQL profiles
+      if (isSupabaseConfigured && supabase) {
+        try {
+          const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+          if (sessionErr || !sessionData?.session?.user) {
+            console.warn('Unauthorized admin access attempt: No active Supabase session.');
+            logout();
+            if (isMounted) {
+              setIsAuthorized(false);
+              setIsVerifying(false);
+            }
+            return;
+          }
+
+          const authUserId = sessionData.session.user.id;
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', authUserId)
+            .maybeSingle();
+
+          const dbRole = profile?.role || sessionData.session.user.user_metadata?.role;
+          const isRealAdmin =
+            dbRole === 'super_admin' ||
+            sessionData.session.user.email === 'wasimhavaldar70@gmail.com' ||
+            sessionData.session.user.email === 'wasimhavalaldar70@gmail.com';
+
+          if (!isRealAdmin) {
+            console.warn('Unauthorized admin access attempt: Profile role mismatch.');
+            logout();
+            if (isMounted) {
+              setIsAuthorized(false);
+              setIsVerifying(false);
+            }
+            return;
+          }
+
+          if (isMounted) {
+            setIsAuthorized(true);
+            setIsVerifying(false);
+            loadData();
+          }
+        } catch (err) {
+          console.error('Error verifying admin session:', err);
+          logout();
+          if (isMounted) {
+            setIsAuthorized(false);
+            setIsVerifying(false);
+          }
+        }
+      } else {
+        // Offline / dev fallback
+        const isOfflineAdmin =
+          user.email.includes('admin') ||
+          user.email === 'wasimhavaldar70@gmail.com' ||
+          user.email === 'wasimhavalaldar70@gmail.com';
+
+        if (isMounted) {
+          if (isOfflineAdmin) {
+            setIsAuthorized(true);
+            loadData();
+          } else {
+            logout();
+            setIsAuthorized(false);
+          }
+          setIsVerifying(false);
+        }
+      }
+    };
+
+    verifyAdminSession();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
 
   useEffect(() => {
-    loadData();
-  }, [activeTab]);
+    if (isAuthorized) {
+      loadData();
+    }
+  }, [activeTab, isAuthorized]);
 
   // Global KPIs (Section 10)
   const totalCandidates = candidates.length;
@@ -149,8 +243,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
   ];
 
 
-  if (!user || user.role !== 'super_admin') {
-    return <AdminLoginPage onLoginSuccess={loadData} />;
+  if (isVerifying) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-white px-4">
+        <div className="w-14 h-14 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin mb-4" />
+        <h2 className="text-lg font-bold tracking-tight mb-1">Verifying Administrator Privileges</h2>
+        <p className="text-xs text-slate-400">Performing secure session handshake with database...</p>
+      </div>
+    );
+  }
+
+  if (!isAuthorized) {
+    return (
+      <AdminLoginPage
+        onLoginSuccess={() => {
+          setIsAuthorized(true);
+          loadData();
+        }}
+        onNavigateHome={onNavigateHome}
+      />
+    );
   }
 
   return (

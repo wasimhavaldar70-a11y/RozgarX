@@ -121,10 +121,23 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({
         if (!isSuperAdmin) {
           // Immediately terminate session - NOT an admin
           await supabase.auth.signOut();
+          if (typeof document !== 'undefined') {
+            document.cookie = 'mahajobs_admin_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax;';
+            document.cookie = 'mahajobs_admin_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax;';
+          }
           setErrorMessage(
             'Access Denied: This account is not authorized for Super Administrator access.'
           );
           return;
+        }
+
+        // Securely set admin session cookies for Edge route protection
+        if (typeof document !== 'undefined') {
+          const token = data?.session?.access_token || '';
+          if (token) {
+            document.cookie = `mahajobs_admin_token=${token}; path=/; max-age=86400; SameSite=Lax;`;
+          }
+          document.cookie = `mahajobs_admin_session=true; path=/; max-age=86400; SameSite=Lax;`;
         }
 
         setSuccessMessage('Administrator verified. Loading control center...');
@@ -144,6 +157,9 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({
       } else {
         // Fallback for offline/local simulation
         if (cleanEmail.includes('admin') || cleanEmail === 'wasimhavaldar70@gmail.com') {
+          if (typeof document !== 'undefined') {
+            document.cookie = `mahajobs_admin_session=true; path=/; max-age=86400; SameSite=Lax;`;
+          }
           setSuccessMessage('Administrator verified. Loading control center...');
           loginAs('super_admin', cleanEmail, 'Super Administrator');
           if (onLoginSuccess) {

@@ -253,6 +253,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (typeof window !== 'undefined') {
       localStorage.removeItem('mahajobs_current_user');
       localStorage.removeItem('mahajobs_saved_jobs');
+      if (typeof document !== 'undefined') {
+        document.cookie = 'mahajobs_admin_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax;';
+        document.cookie = 'mahajobs_admin_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax;';
+      }
       const path = window.location.pathname.toLowerCase();
       if (
         path.includes('dashboard') ||

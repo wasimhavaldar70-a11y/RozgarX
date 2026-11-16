@@ -85,8 +85,18 @@ export function normalizeIndianMobile(raw: string): {
 }
 
 export function getClientIpHash(headers: Headers): string {
-  const forwarded = headers.get('x-forwarded-for');
-  const firstIp = forwarded ? forwarded.split(',')[0]?.trim() : '';
-  const ip = firstIp || headers.get('cf-connecting-ip') || 'unknown_ip';
-  return sha256(ip);
+  // Prioritize verified proxy headers over easily-spoofed client X-Forwarded-For
+  const cfConnectingIp = headers.get('cf-connecting-ip')?.trim();
+  const xRealIp = headers.get('x-real-ip')?.trim();
+  const forwarded = headers.get('x-forwarded-for')?.trim();
+  
+  // On trusted edge environments (Vercel / Cloudflare), x-real-ip or cf-connecting-ip is set by the edge
+  let ip = cfConnectingIp || xRealIp;
+  if (!ip && forwarded) {
+    // If only X-Forwarded-For is present, take the rightmost IP (closest to the edge proxy)
+    const parts = forwarded.split(',').map(p => p.trim()).filter(Boolean);
+    ip = parts.length > 0 ? parts[parts.length - 1] : 'unknown_ip';
+  }
+  
+  return sha256(ip || 'unknown_ip');
 }

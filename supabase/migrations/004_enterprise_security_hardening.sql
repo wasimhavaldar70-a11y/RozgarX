@@ -305,13 +305,21 @@ CREATE POLICY notifications_policy ON public.notifications
     WITH CHECK (user_id = auth.uid() OR public.is_super_admin());
 
 -- 4.8. AUDIT LOGS (Append-only for security; read-only for Super Admin)
+DROP POLICY IF EXISTS audit_logs_read ON public.audit_logs;
 CREATE POLICY audit_logs_read ON public.audit_logs
     FOR SELECT TO authenticated
     USING (public.is_super_admin());
 
+DROP POLICY IF EXISTS audit_logs_insert ON public.audit_logs;
 CREATE POLICY audit_logs_insert ON public.audit_logs
     FOR INSERT TO authenticated
-    WITH CHECK (true);
+    WITH CHECK (
+        public.is_super_admin() 
+        OR (admin_id = auth.uid() AND action = 'USER_SELF_ACTION')
+    );
+
+-- Prevent any UPDATE or DELETE operations to ensure tamper-proof audit trail
+REVOKE UPDATE, DELETE ON public.audit_logs FROM public, authenticated, anon;
 
 -- 4.9. PUBLIC MASTER TABLES (Read-only for public, writable by Super Admin)
 CREATE POLICY states_public_read ON public.states FOR SELECT TO public USING (is_active = true OR public.is_super_admin());

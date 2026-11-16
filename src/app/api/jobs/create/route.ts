@@ -1,8 +1,79 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseAdmin } from '@/src/lib/otpServer';
+import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin, getSupabaseUrl } from '@/src/lib/otpServer';
 
 export async function POST(req: NextRequest) {
   try {
+    // -------------------------------------------------------------
+    // 1. STRICT AUTHENTICATION VERIFICATION (Reject 401)
+    // -------------------------------------------------------------
+    const authHeader = req.headers.get('authorization') || '';
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+
+    if (!token) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized: Valid authentication token is required to create a vacancy.' },
+        { status: 401 }
+      );
+    }
+
+    const supabaseUrl = getSupabaseUrl();
+    const anonKey =
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+      '';
+
+    if (!supabaseUrl || !anonKey) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication service configuration error.' },
+        { status: 503 }
+      );
+    }
+
+    // Verify token against Supabase Auth engine
+    const userClient = createClient(supabaseUrl, anonKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+      global: { headers: { Authorization: `Bearer ${token}` } }
+    });
+
+    const { data: userData, error: userError } = await userClient.auth.getUser();
+    if (userError || !userData?.user) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized: Invalid, expired, or revoked authentication session.' },
+        { status: 401 }
+      );
+    }
+
+    const authenticatedUserId = userData.user.id;
+    const supabaseAdmin = getSupabaseAdmin();
+
+    // -------------------------------------------------------------
+    // 2. STRICT ROLE AUTHORIZATION (Reject 403 for Candidates)
+    // -------------------------------------------------------------
+    // Always fetch authoritative role from PostgreSQL profiles table
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('role')
+      .eq('id', authenticatedUserId)
+      .maybeSingle();
+
+    const userRole = profile?.role || userData.user.user_metadata?.role || 'candidate';
+
+    if (userRole !== 'employer' && userRole !== 'super_admin') {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Forbidden: Candidate accounts are not permitted to publish vacancies. An Employer or Admin account is required.'
+        },
+        { status: 403 }
+      );
+    }
+
+    const isSuperAdmin = userRole === 'super_admin';
+
+    // -------------------------------------------------------------
+    // 3. PARSE & VALIDATE PAYLOAD
+    // -------------------------------------------------------------
     const body = await req.json();
     const {
       title,
@@ -24,10 +95,9 @@ export async function POST(req: NextRequest) {
       address = '',
       companyName = 'Maharashtra Enterprise',
       companyId,
-      employerId,
       contactEmail,
       contactPhone,
-      status = 'pending'
+      status: requestedStatus
     } = body;
 
     if (!title || !description || !district) {
@@ -37,70 +107,155 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const supabaseAdmin = getSupabaseAdmin();
+    // Role Enforcement: Non-admins cannot self-approve vacancies
+    const finalStatus = isSuperAdmin && requestedStatus === 'approved' ? 'approved' : 'pending';
 
-    // 1. Resolve Employer
-    let resolvedEmployerId = employerId;
-    const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+    // -------------------------------------------------------------
+    // 4. TENANT ISOLATION & COMPANY OWNERSHIP VERIFICATION
+    // -------------------------------------------------------------
+    let resolvedEmployerId: string | null = null;
+    let resolvedCompanyId: string | null = null;
 
-    if (!resolvedEmployerId || !isUuid(resolvedEmployerId)) {
-      const { data: defaultEmp } = await supabaseAdmin
+    if (!isSuperAdmin) {
+      // For employers: Resolve verified employer record belonging to authenticated user
+      const { data: empRecord } = await supabaseAdmin
         .from('employers')
-        .select('id')
-        .limit(1)
-        .maybeSingle();
-      resolvedEmployerId = defaultEmp?.id || null;
-    }
-
-    // 2. Resolve Company
-    let resolvedCompanyId = companyId;
-    if (!resolvedCompanyId || !isUuid(resolvedCompanyId)) {
-      // Check if company exists by name
-      const { data: existingComp } = await supabaseAdmin
-        .from('companies')
-        .select('id')
-        .ilike('name', companyName.trim())
-        .limit(1)
+        .select('id, is_active')
+        .eq('profile_id', authenticatedUserId)
         .maybeSingle();
 
-      if (existingComp) {
-        resolvedCompanyId = existingComp.id;
-      } else {
-        // Create company record
-        const { data: newComp, error: compErr } = await supabaseAdmin
+      if (!empRecord) {
+        return NextResponse.json(
+          { success: false, error: 'Forbidden: No active employer organization found for this account.' },
+          { status: 403 }
+        );
+      }
+
+      if (!empRecord.is_active) {
+        return NextResponse.json(
+          { success: false, error: 'Forbidden: Employer account has been suspended or deactivated.' },
+          { status: 403 }
+        );
+      }
+
+      resolvedEmployerId = empRecord.id;
+
+      // Anti-IDOR: Verify company ownership strictly
+      const isUuid = (val: string) =>
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+
+      if (companyId && isUuid(companyId)) {
+        const { data: compRecord } = await supabaseAdmin
           .from('companies')
-          .insert({
-            employer_id: resolvedEmployerId,
-            name: companyName.trim(),
-            tagline: `${companyName} Recruitment Division`,
-            industry: category || 'General Business',
-            company_type: 'Private Limited',
-            district: district,
-            city: city || district,
-            address: address || `${city}, ${district}, Maharashtra`,
-            contact_email: contactEmail || 'hr@company.com',
-            contact_phone: contactPhone || '+91 98220 12345',
-            verification_status: 'Verified'
-          })
-          .select('id')
-          .single();
+          .select('id, employer_id')
+          .eq('id', companyId)
+          .maybeSingle();
 
-        if (compErr) {
-          console.error('Failed to create company:', compErr);
-        } else {
-          resolvedCompanyId = newComp?.id;
+        if (!compRecord) {
+          return NextResponse.json({ success: false, error: 'Specified company not found.' }, { status: 404 });
         }
+
+        if (compRecord.employer_id !== resolvedEmployerId) {
+          return NextResponse.json(
+            { success: false, error: 'Forbidden: You cannot post vacancies on behalf of another company.' },
+            { status: 403 }
+          );
+        }
+
+        resolvedCompanyId = compRecord.id;
+      } else {
+        // Resolve company by name, ensuring it belongs to this employer
+        const cleanName = (companyName || '').trim();
+        const { data: existingComp } = await supabaseAdmin
+          .from('companies')
+          .select('id, employer_id')
+          .ilike('name', cleanName)
+          .maybeSingle();
+
+        if (existingComp) {
+          if (existingComp.employer_id !== resolvedEmployerId) {
+            return NextResponse.json(
+              {
+                success: false,
+                error: `Forbidden: Company "${cleanName}" belongs to another registered organization.`
+              },
+              { status: 403 }
+            );
+          }
+          resolvedCompanyId = existingComp.id;
+        } else {
+          // Create company owned strictly by this authenticated employer
+          const { data: newComp, error: compErr } = await supabaseAdmin
+            .from('companies')
+            .insert({
+              employer_id: resolvedEmployerId,
+              name: cleanName || 'Maharashtra Enterprise',
+              tagline: `${cleanName || 'Maharashtra'} Recruitment Division`,
+              industry: category || 'General Business',
+              company_type: 'Private Limited',
+              district: district,
+              city: city || district,
+              address: address || `${city}, ${district}, Maharashtra`,
+              contact_email: contactEmail || userData.user.email,
+              contact_phone: contactPhone || '+91 98220 12345',
+              verification_status: 'Pending'
+            })
+            .select('id')
+            .single();
+
+          if (compErr || !newComp) {
+            console.error('Failed to create company record:', compErr?.message);
+            return NextResponse.json(
+              { success: false, error: 'Failed to initialize company profile.' },
+              { status: 500 }
+            );
+          }
+
+          resolvedCompanyId = newComp.id;
+        }
+      }
+    } else {
+      // Super Admin override path
+      const isUuid = (val: string) =>
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+
+      if (body.employerId && isUuid(body.employerId)) {
+        resolvedEmployerId = body.employerId;
+      } else {
+        const { data: defaultEmp } = await supabaseAdmin
+          .from('employers')
+          .select('id')
+          .limit(1)
+          .maybeSingle();
+        resolvedEmployerId = defaultEmp?.id || null;
+      }
+
+      if (companyId && isUuid(companyId)) {
+        resolvedCompanyId = companyId;
+      } else {
+        const cleanName = (companyName || '').trim();
+        const { data: existingComp } = await supabaseAdmin
+          .from('companies')
+          .select('id')
+          .ilike('name', cleanName)
+          .limit(1)
+          .maybeSingle();
+        resolvedCompanyId = existingComp?.id || null;
       }
     }
 
     const resolvedAddress = (address || '').trim();
-    let resolvedDistrict = district || 'Kolhapur';
+    let resolvedDistrict = district || 'Pune';
     if (resolvedAddress.toLowerCase().includes('vathar') && resolvedDistrict === 'Pune') {
       resolvedDistrict = 'Kolhapur';
     }
-    const resolvedCity = (city || '').trim() || (resolvedAddress ? resolvedAddress.split(',')[0].trim() : resolvedDistrict);
+    const resolvedCity =
+      (city || '').trim() ||
+      (resolvedAddress ? resolvedAddress.split(',')[0].trim() : resolvedDistrict);
 
-    // 3. Insert Job into database table
+    // -------------------------------------------------------------
+    // 5. ATOMIC VACANCY INSERTION
+    // -------------------------------------------------------------
     const { data: insertedJob, error: jobErr } = await supabaseAdmin
       .from('jobs')
       .insert({
@@ -123,27 +278,27 @@ export async function POST(req: NextRequest) {
         district: resolvedDistrict,
         city: resolvedCity,
         address: resolvedAddress,
-        status: status === 'approved' ? 'approved' : 'pending',
+        status: finalStatus,
         is_featured: false,
         view_count: 0,
         application_count: 0,
-        contact_email: contactEmail,
+        contact_email: contactEmail || userData.user.email,
         contact_phone: contactPhone
       })
       .select('id, title, category, district, city, salary_min, salary_max, status, created_at')
       .single();
 
     if (jobErr) {
-      console.error('Database error inserting job:', jobErr);
-      return NextResponse.json(
-        { success: false, error: jobErr.message },
-        { status: 500 }
-      );
+      console.error('Database error inserting job:', jobErr.message);
+      return NextResponse.json({ success: false, error: jobErr.message }, { status: 500 });
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Job successfully created and saved inside database table.',
+      message:
+        finalStatus === 'approved'
+          ? 'Vacancy published and approved successfully.'
+          : 'Vacancy submitted successfully and is pending administrative review.',
       job: insertedJob
     });
   } catch (err: unknown) {
@@ -151,4 +306,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: errorMsg }, { status: 500 });
   }
 }
-

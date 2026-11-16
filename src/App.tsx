@@ -82,7 +82,7 @@ const parseLocation = (): {
     view = 'employer-jobs';
   } else if (path === 'employer-plans' || path === 'employer/plans') {
     view = 'employer-plans';
-  } else if (path === 'admin' || path === 'admin-dashboard') {
+  } else if (path === 'admin' || path === 'admin-dashboard' || path === 'admin/login' || path === 'admin-login') {
     view = 'admin-dashboard';
   } else if (path === 'privacy-policy' || path === 'privacy') {
     view = 'privacy-policy';
@@ -129,6 +129,7 @@ const getUrlForView = (
   if (view === 'companies') return '/companies';
   if (view === 'career-advice') return '/career-advice';
   if (view === 'resume-builder' || view === 'resumebuilder') return '/resume-builder';
+  if (view === 'admin-login') return '/admin/login';
   if (view === 'admin-dashboard') return '/admin';
   if (view === 'candidate-dashboard') return '/candidate-dashboard';
   if (view === 'candidate-applications') return '/candidate-dashboard?tab=applications';

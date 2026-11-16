@@ -140,6 +140,16 @@ export interface Job {
   applicationCount: number;
   createdAt: string;
   updatedAt: string;
+  // Enhanced Job Post Detail Fields
+  jobRole?: string;
+  englishRequirement?: string;
+  jobTimings?: string;
+  interviewTimings?: string;
+  genderPreference?: string;
+  whatsappNumber?: string;
+  isNew?: boolean;
+  applyFirst?: boolean;
+  additionalInfo?: string;
 }
 
 export function getJobLocationDisplay(job: {

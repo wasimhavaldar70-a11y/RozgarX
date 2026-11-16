@@ -127,26 +127,39 @@ class DatabaseService {
 
       const storedJobs = getStored<Job[]>('jobs', []);
       this.jobs = dedupeJobs([...INITIAL_JOBS, ...storedJobs]).map(j => {
-        if (j.companyName === 'Nakshatra Motors' || j.title === 'Senior Mechanical') {
-          return {
-            ...j,
+        let jobItem: Job = {
+          ...j,
+          jobRole: j.jobRole || (j.category?.toLowerCase().includes('labour') ? 'Labourer' : j.category || 'Executive'),
+          englishRequirement: j.englishRequirement || (j.title?.toLowerCase().includes('helper') || j.category?.toLowerCase().includes('labour') ? 'No English Required' : 'Basic English Required'),
+          jobTimings: j.jobTimings || '9:30 AM - 6:30 PM | Monday to Saturday',
+          interviewTimings: j.interviewTimings || '11:00 AM - 4:00 PM | Monday to Saturday',
+          genderPreference: j.genderPreference || 'Both male and female can apply',
+          whatsappNumber: j.whatsappNumber || j.contactPhone || '+91 98220 11223',
+          viewCount: j.viewCount || 22,
+          isNew: j.isNew !== undefined ? j.isNew : true,
+          applyFirst: j.applyFirst !== undefined ? j.applyFirst : (j.applicationCount < 5)
+        };
+
+        if (jobItem.companyName === 'Nakshatra Motors' || jobItem.title === 'Senior Mechanical') {
+          jobItem = {
+            ...jobItem,
             companyLogo: '/assets/jobs/nakshatra_logo.png',
             companyVerified: true,
             isUrgent: true,
-            district: j.district || 'Kolhapur',
-            city: j.city || 'Kolhapur',
-            address: j.address || 'Kolhapur, Maharashtra'
+            district: jobItem.district || 'Kolhapur',
+            city: jobItem.city || 'Kolhapur',
+            address: jobItem.address || 'Kolhapur, Maharashtra'
           };
         }
         // Heal and normalize work location if address was provided
-        if (j.address && (j.address.toLowerCase().includes('vathar') || j.address.toLowerCase().includes('vadgaon'))) {
-          return {
-            ...j,
-            district: j.district === 'Pune' ? 'Kolhapur' : j.district,
-            city: j.city === 'Hinjewadi' || !j.city ? 'Vathar Taraf vadgaon' : j.city
+        if (jobItem.address && (jobItem.address.toLowerCase().includes('vathar') || jobItem.address.toLowerCase().includes('vadgaon'))) {
+          jobItem = {
+            ...jobItem,
+            district: jobItem.district === 'Pune' ? 'Kolhapur' : jobItem.district,
+            city: jobItem.city === 'Hinjewadi' || !jobItem.city ? 'Vathar Taraf vadgaon' : jobItem.city
           };
         }
-        return j;
+        return jobItem;
       });
       this.persist('jobs', this.jobs);
 
@@ -317,19 +330,30 @@ class DatabaseService {
 
     // Synchronize to Supabase PostgreSQL database table in background
     if (typeof window !== 'undefined') {
-      fetch('/api/jobs/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newJob)
-      })
-        .then(res => res.json())
-        .then(data => {
+      const syncJobToServer = async () => {
+        try {
+          const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+          if (isSupabaseConfigured && supabase) {
+            const { data: sessionData } = await supabase.auth.getSession();
+            if (sessionData?.session?.access_token) {
+              headers['Authorization'] = `Bearer ${sessionData.session.access_token}`;
+            }
+          }
+          const res = await fetch('/api/jobs/create', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(newJob)
+          });
+          const data = await res.json();
           if (data?.success && data?.job?.id) {
             newJob.id = data.job.id;
             this.persist('jobs', this.jobs);
           }
-        })
-        .catch(e => console.warn('Background database sync for job:', e));
+        } catch (e) {
+          console.warn('Background database sync for job:', e);
+        }
+      };
+      syncJobToServer();
     }
 
     // Notify Employer

@@ -23,6 +23,7 @@ import { useAuth } from '../../context/AuthContext';
 import { JobType, WorkMode } from '../../types';
 import { MAHARASHTRA_DISTRICTS } from '../../data/maharashtra';
 import { JOB_CATEGORIES } from '../../data/categories';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 
 const CATEGORY_SKILL_SUGGESTIONS: Record<string, string[]> = {
   'Manufacturing & Production': ['CNC Operating', 'AutoCAD', 'Quality Inspection', 'Lathe Machine', 'Blueprint Reading', 'Maintenance', 'Welding', 'Assembly'],
@@ -220,9 +221,17 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
 
     // 2. Persist directly to Supabase PostgreSQL database table via API
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (isSupabaseConfigured && supabase) {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData?.session?.access_token) {
+          headers['Authorization'] = `Bearer ${sessionData.session.access_token}`;
+        }
+      }
+
       const apiRes = await fetch('/api/jobs/create', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(jobPayload)
       });
       const apiData = await apiRes.json();
