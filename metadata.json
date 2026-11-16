@@ -1,0 +1,6 @@
+{
+  "name": "MahaJobs - Maharashtra Job Portal",
+  "description": "Connecting job seekers with verified employers across all 36 districts of Maharashtra. Complete with job search, employer subscriptions, resume builder, and admin panel.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

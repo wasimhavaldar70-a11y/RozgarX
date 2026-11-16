@@ -1,0 +1,1320 @@
+# MASTER DEVELOPMENT PROMPT
+# PROJECT: MAHAJOBS – MAHARASHTRA JOB PORTAL
+
+## 1. YOUR ROLE
+
+Act as a Senior Full-Stack Developer, Software Architect, UI/UX Designer, PostgreSQL Database Architect, Supabase Security Expert and QA Engineer.
+
+Your responsibility is to design, develop, test and deliver a complete, professional, production-ready job portal for Maharashtra, India.
+
+This is a real business application, not a demo, prototype or static website.
+
+Build a fully functional system with working authentication, database operations, job posting, job applications, employer subscriptions, payment processing, admin management and notifications.
+
+Do not create fake buttons, dummy dashboards, static data pretending to be live data or incomplete workflows.
+
+Every important feature must work with the actual Supabase database.
+
+---
+
+# 2. PROJECT OVERVIEW
+
+Project Name: MahaJobs
+
+Business Type: Maharashtra Regional Job Portal
+
+Main Purpose:
+
+Connect job seekers with employers across Maharashtra.
+
+The platform will allow:
+
+1. Candidates to find jobs and apply for FREE.
+2. Employers to register and publish job vacancies.
+3. Employers to receive and manage applications.
+4. Employers to purchase job posting packages.
+5. Employers to promote their vacancies.
+6. Candidates to create and manage resumes.
+7. Super Admin to manage the entire platform.
+8. Platform owners to generate revenue through subscriptions, featured jobs and recruitment services.
+
+Target Market:
+
+All 36 districts of Maharashtra.
+
+Languages:
+- English
+- Marathi
+- Hindi
+
+Default language: English.
+
+Keep the interface simple and accessible to people with basic computer knowledge.
+
+---
+
+# 3. TECHNOLOGY STACK
+
+Use the following technology:
+
+Frontend:
+- Next.js App Router
+- TypeScript
+- React
+- Tailwind CSS
+- Shadcn UI
+- Lucide Icons
+
+Backend:
+- Next.js Server Actions / Route Handlers
+- Supabase
+
+Database:
+- Supabase PostgreSQL
+
+Authentication:
+- Supabase Auth
+- Email and password authentication
+- Mobile OTP authentication where configured
+- Password reset
+- Email verification
+
+Storage:
+- Supabase Storage
+
+Payments:
+- Razorpay
+
+Notifications:
+- Email integration
+- SMS provider integration
+- WhatsApp Business API integration (optional, configurable)
+
+Deployment:
+- Vercel
+- Supabase Cloud
+
+Validation:
+- Zod
+- React Hook Form
+
+Use stable, supported package versions. Do not introduce unnecessary libraries.
+
+---
+
+# 4. DESIGN AND UI/UX REQUIREMENTS
+
+IMPORTANT:
+
+I do NOT want fancy, complicated or over-designed UI.
+
+I want a clean, professional, modern business application.
+
+Design inspiration:
+- Indeed
+- LinkedIn Jobs
+- Naukri
+- Simple modern SaaS dashboards
+
+Design Principles:
+
+1. White background.
+2. Professional blue primary color.
+3. Light grey secondary backgrounds.
+4. Clear typography.
+5. Consistent spacing.
+6. Simple cards.
+7. Clean tables.
+8. Small, meaningful icons.
+9. Subtle borders.
+10. Minimal shadows.
+11. No unnecessary gradients.
+12. No excessive animations.
+13. No glassmorphism.
+14. No oversized headings.
+15. No confusing navigation.
+
+Use a consistent design system.
+
+Suggested Colors:
+
+Primary: #2563EB
+Dark: #1E293B
+Background: #F8FAFC
+White: #FFFFFF
+Border: #E2E8F0
+Success: #16A34A
+Warning: #D97706
+Danger: #DC2626
+
+Typography:
+Use Inter or another clean, readable sans-serif font.
+
+Responsive Design:
+
+The entire application must work properly on:
+- Desktop
+- Laptop
+- Tablet
+- Mobile
+
+Mobile experience is especially important because most job seekers will access the website through smartphones.
+
+Create reusable components for:
+- Buttons
+- Inputs
+- Select boxes
+- Modals
+- Tables
+- Pagination
+- Status badges
+- Search filters
+- Empty states
+- Loading states
+- Error messages
+- Confirmation dialogs
+
+Do not create a different visual style for every page.
+
+---
+
+# 5. PUBLIC WEBSITE
+
+Create a professional public-facing website.
+
+Pages:
+
+1. Home
+2. Find Jobs
+3. Job Details
+4. Companies
+5. Company Details
+6. Jobs by District
+7. Jobs by Category
+8. About Us
+9. Contact Us
+10. Career Advice
+11. Login
+12. Register
+13. Privacy Policy
+14. Terms and Conditions
+
+HOME PAGE:
+
+Create a simple homepage containing:
+
+A. Header:
+- MahaJobs logo
+- Home
+- Find Jobs
+- Companies
+- Career Advice
+- Login
+- Register
+- Post a Job
+
+B. Hero Section:
+
+Heading:
+"Find Your Next Job in Maharashtra"
+
+Subheading:
+"Discover local opportunities and connect with trusted employers across Maharashtra."
+
+Search fields:
+- Job Title / Skills
+- District / City
+- Search Jobs button
+
+C. Popular Categories:
+
+- IT & Software
+- Accounting & Finance
+- Sales & Marketing
+- Manufacturing
+- Education
+- Healthcare
+- Banking
+- Hospitality
+- Retail
+- Office Administration
+- Driving & Logistics
+- Customer Support
+
+D. Popular Locations:
+
+Show Maharashtra districts and cities.
+
+E. Latest Jobs:
+
+Display recently approved active vacancies.
+
+F. How It Works:
+
+For Job Seekers:
+1. Create Account
+2. Complete Profile
+3. Find Jobs
+4. Apply for Free
+
+For Employers:
+1. Register Company
+2. Post Vacancy
+3. Receive Applications
+4. Hire Employees
+
+G. Footer:
+- About
+- Contact
+- Terms
+- Privacy
+- Employer Registration
+- Candidate Registration
+- Social Media
+
+---
+
+# 6. JOB SEEKER MODULE
+
+Create a complete job seeker dashboard.
+
+Registration:
+
+Required fields:
+- Full Name
+- Email
+- Mobile Number
+- Password
+- District
+- City
+
+After registration, create a candidate profile.
+
+CANDIDATE PROFILE:
+
+Personal Information:
+- Full Name
+- Profile Photo
+- Date of Birth
+- Gender (optional)
+- Mobile Number
+- Email
+- Address
+- District
+- City
+- Pincode
+
+Education:
+- Highest Qualification
+- Education Details
+- Passing Year
+- College / Institute
+
+Employment:
+- Fresher / Experienced
+- Current Company
+- Previous Company
+- Total Experience
+- Current Salary (optional)
+- Expected Salary
+
+Skills:
+- Skills
+- Languages Known
+- Job Preferences
+
+Resume:
+- Upload PDF Resume
+- Download Resume
+- Replace Resume
+- Create Resume Online
+
+JOB SEEKER DASHBOARD:
+
+Show:
+
+- Total Applications
+- Applications Under Review
+- Shortlisted Applications
+- Rejected Applications
+- Saved Jobs
+
+Dashboard Menu:
+
+1. Overview
+2. My Profile
+3. My Resume
+4. Find Jobs
+5. My Applications
+6. Saved Jobs
+7. Job Alerts
+8. Notifications
+9. Account Settings
+10. Logout
+
+JOB APPLICATION:
+
+Candidate can apply to an approved, active job.
+
+Application form:
+- Name
+- Mobile
+- Email
+- Resume
+- Cover Message (optional)
+
+Prevent duplicate applications for the same job.
+
+After applying:
+- Save application to Supabase.
+- Show success message.
+- Add the job to application history.
+- Notify the employer.
+- Allow candidate to track application status.
+
+Application Status:
+
+- Applied
+- Viewed
+- Shortlisted
+- Interview Scheduled
+- Selected
+- Rejected
+- Withdrawn
+
+Candidates must never pay money just to apply for jobs.
+
+---
+
+# 7. EMPLOYER MODULE
+
+Create a complete employer dashboard.
+
+EMPLOYER REGISTRATION:
+
+Fields:
+- Owner / Contact Person Name
+- Company Name
+- Business Email
+- Mobile Number
+- Password
+- Company Type
+- Industry
+- District
+- City
+- Full Address
+- Website (optional)
+
+Company Profile:
+
+- Company Logo
+- Company Name
+- About Company
+- Industry
+- Company Size
+- Address
+- Website
+- Contact Details
+
+Verification:
+
+Employer verification status:
+- Pending
+- Verified
+- Rejected
+- Suspended
+
+Allow employers to submit appropriate business documents for verification.
+
+Unverified employers must not receive a verified badge.
+
+EMPLOYER DASHBOARD:
+
+Overview cards:
+
+- Total Jobs Posted
+- Active Jobs
+- Total Applications
+- Shortlisted Candidates
+- Interviews Scheduled
+- Subscription Status
+
+Navigation:
+
+1. Overview
+2. Company Profile
+3. Post New Job
+4. Manage Jobs
+5. Applications
+6. Candidate Search
+7. Featured Jobs
+8. Subscription Plans
+9. Payments
+10. Notifications
+11. Account Settings
+12. Logout
+
+POST A JOB:
+
+Fields:
+
+- Job Title
+- Job Category
+- Job Description
+- Job Responsibilities
+- Required Skills
+- Education
+- Experience
+- Minimum Salary
+- Maximum Salary
+- Salary Type
+- Number of Vacancies
+- Job Type
+- Work Mode
+- District
+- City
+- Address
+- Application Deadline
+- Contact Information
+
+Job Types:
+- Full Time
+- Part Time
+- Internship
+- Contract
+- Temporary
+
+Work Modes:
+- Office
+- Remote
+- Hybrid
+
+Job posting workflow:
+
+1. Employer fills job details.
+2. Validates all required information.
+3. Saves the job as pending approval.
+4. Admin reviews the job.
+5. Admin approves or rejects it.
+6. Approved job becomes publicly visible.
+7. Employer receives a notification.
+
+Allow employers to edit, pause, close and renew their jobs.
+
+Do not allow expired or suspended jobs to appear in public search.
+
+MANAGE APPLICATIONS:
+
+Employers can:
+
+- View applications.
+- View candidate profiles.
+- Access authorised resumes.
+- Filter applications.
+- Search candidates.
+- Shortlist candidates.
+- Reject candidates.
+- Schedule interviews.
+- Mark candidates as selected.
+- Add private internal notes.
+- Contact candidates.
+
+Every status change must be saved in the database.
+
+Candidates must be notified of important application status changes.
+
+---
+
+# 8. REVENUE AND SUBSCRIPTION SYSTEM
+
+This is a critical business module.
+
+The platform must earn money primarily from employers.
+
+Candidates can register, search and apply for FREE.
+
+Create the following employer plans:
+
+FREE PLAN:
+- Price: ₹0
+- 1 job posting
+- Basic application management
+- Standard job listing
+
+BASIC PLAN:
+- Price: ₹499
+- 3 job postings
+- Application management
+- 30-day job validity
+
+STANDARD PLAN:
+- Price: ₹999
+- 10 job postings
+- Application management
+- Basic candidate search (if enabled)
+- 30-day job validity
+
+PREMIUM PLAN:
+- Price: ₹1,999
+- 25 job postings
+- Priority support
+- Advanced application management
+- Featured placement allowance as configured
+- 30-day job validity
+
+All plans must be editable through Super Admin.
+
+Important:
+
+Do not hardcode package prices inside frontend components.
+
+Store all plans in the database.
+
+SUBSCRIPTION FUNCTIONALITY:
+
+- View available plans.
+- Select a plan.
+- Show package features.
+- Purchase package.
+- Process payment through Razorpay.
+- Activate subscription only after verified payment.
+- Show subscription start date.
+- Show expiry date.
+- Show remaining job posting credits.
+- Show payment history.
+- Allow renewal.
+- Prevent expired subscriptions from receiving paid-plan benefits.
+
+JOB CREDIT SYSTEM:
+
+When an employer posts a job:
+
+1. Check the employer's active subscription.
+2. Check remaining posting credits.
+3. Verify job eligibility.
+4. Deduct one credit when the configured posting workflow is successfully completed.
+5. Prevent duplicate deductions.
+6. Maintain a transaction history.
+
+Free plan must also have a clear job posting limit.
+
+RAZORPAY INTEGRATION:
+
+Implement secure payment integration.
+
+Requirements:
+
+- Create orders server-side.
+- Never expose Razorpay secret keys.
+- Verify payment signatures server-side.
+- Verify webhook signatures.
+- Prevent duplicate webhook processing.
+- Store every payment transaction.
+- Maintain payment status.
+- Handle failed payments.
+- Handle cancelled payments.
+- Handle refunds.
+- Never activate a subscription based only on frontend success.
+
+Payment statuses:
+- Created
+- Pending
+- Successful
+- Failed
+- Refunded
+
+Use database transactions or safe server-side RPC operations where needed to ensure payment and subscription consistency.
+
+---
+
+# 9. ADDITIONAL REVENUE MODULES
+
+FEATURED JOBS:
+
+Allow employers to promote jobs.
+
+Suggested packages:
+
+- 7 Days: ₹199
+- 15 Days: ₹399
+- 30 Days: ₹699
+
+Admin can edit these prices.
+
+Featured jobs should appear in a separate clearly labelled section.
+
+COMPANY ADVERTISEMENTS:
+
+Create an advertisement management system.
+
+Admin can:
+- Add banner advertisements.
+- Upload banner images.
+- Add destination URL.
+- Set start date.
+- Set end date.
+- Set advertisement location.
+- Enable or disable advertisements.
+
+CANDIDATE DATABASE:
+
+Allow eligible employers to search candidates only when:
+
+- Candidate has explicitly enabled employer discoverability.
+- Employer has valid access permissions.
+- Employer's subscription allows candidate search.
+
+Protect candidate contact information.
+
+RECRUITMENT SERVICE:
+
+Create a section for employers to request recruitment assistance.
+
+Fields:
+- Company Name
+- Contact Person
+- Job Role
+- Required Employees
+- Location
+- Required Skills
+- Budget / Recruitment Requirements
+- Additional Details
+
+Admin can manage these requests.
+
+Admin can manually set recruitment service charges.
+
+Do not automatically charge employers for successful hiring unless an explicit, agreed service contract exists.
+
+---
+
+# 10. SUPER ADMIN PANEL
+
+Create a powerful but simple administrative dashboard.
+
+Only authorised super administrators can access it.
+
+Dashboard overview:
+
+- Total Candidates
+- Total Employers
+- Verified Employers
+- Pending Employer Approvals
+- Total Jobs
+- Active Jobs
+- Pending Jobs
+- Total Applications
+- Total Revenue
+- Active Subscriptions
+- Expired Subscriptions
+- Payment Failures
+
+ADMIN NAVIGATION:
+
+1. Dashboard
+2. Candidates
+3. Employers
+4. Employer Verification
+5. Job Management
+6. Job Categories
+7. District Management
+8. City / Taluka Management
+9. Applications
+10. Subscription Plans
+11. Payments
+12. Featured Jobs
+13. Advertisements
+14. Recruitment Requests
+15. Notifications
+16. Reports
+17. Website Settings
+18. Admin Users
+19. Audit Logs
+20. Logout
+
+ADMIN CAPABILITIES:
+
+Candidates:
+- View candidate records.
+- Suspend accounts.
+- Restore accounts.
+- Handle complaints.
+- Manage reported profiles.
+
+Employers:
+- Approve companies.
+- Reject companies.
+- Verify documents.
+- Suspend employers.
+- View company activity.
+
+Jobs:
+- Approve jobs.
+- Reject jobs.
+- Edit or suspend jobs.
+- Remove fraudulent vacancies.
+- Manage expired vacancies.
+
+Subscriptions:
+- Create plans.
+- Edit plans.
+- Change prices.
+- Set job limits.
+- Set subscription duration.
+- Activate or suspend subscriptions through audited admin actions.
+
+Payments:
+- View transactions.
+- Search payment history.
+- View payment status.
+- Process permitted refunds through secure payment workflows.
+
+Reports:
+- Daily registrations.
+- Monthly registrations.
+- Employer growth.
+- Job posting reports.
+- Application reports.
+- Revenue reports.
+
+ADMIN ACTIONS MUST BE RECORDED IN AUDIT LOGS.
+
+---
+
+# 11. MAHARASHTRA LOCATION SYSTEM
+
+Create a proper location database.
+
+Include all 36 Maharashtra districts.
+
+Use structured tables for:
+
+- States
+- Districts
+- Cities
+- Talukas
+
+Initially Maharashtra is the only active state.
+
+Allow administrators to manage location records.
+
+Job search filters must support:
+
+- State
+- District
+- City
+- Taluka
+
+Create location-specific job listing pages.
+
+Examples:
+
+/jobs/maharashtra/kolhapur
+
+/jobs/maharashtra/pune
+
+/jobs/maharashtra/sangli
+
+/jobs/maharashtra/satara
+
+/jobs/maharashtra/mumbai
+
+Do not hardcode location names throughout the application.
+
+Use database-driven location records.
+
+---
+
+# 12. JOB SEARCH ENGINE
+
+Create a functional job search system.
+
+Search by:
+
+- Job title
+- Keywords
+- Company
+- District
+- City
+- Category
+- Qualification
+- Experience
+- Salary
+- Job type
+- Work mode
+
+Features:
+
+- Search suggestions.
+- Filter sidebar.
+- Sorting by latest.
+- Pagination.
+- Save job.
+- Clear filters.
+- No-result message.
+- Mobile-friendly filters.
+
+Only approved, active, non-expired jobs should appear.
+
+Implement database indexes for frequently searched fields.
+
+Avoid loading the entire jobs table into the browser.
+
+Use server-side pagination and filtering.
+
+---
+
+# 13. DATABASE ARCHITECTURE – SUPABASE
+
+Design a proper relational PostgreSQL database.
+
+Create SQL migration files.
+
+Suggested tables:
+
+1. profiles
+2. user_roles
+3. candidates
+4. candidate_education
+5. candidate_experience
+6. candidate_skills
+7. candidate_resumes
+8. employers
+9. companies
+10. employer_documents
+11. jobs
+12. job_categories
+13. job_applications
+14. application_status_history
+15. saved_jobs
+16. job_alerts
+17. states
+18. districts
+19. cities
+20. talukas
+21. subscription_plans
+22. employer_subscriptions
+23. job_credits
+24. credit_transactions
+25. payments
+26. payment_webhook_events
+27. featured_job_plans
+28. featured_jobs
+29. advertisements
+30. recruitment_requests
+31. notifications
+32. support_tickets
+33. reports
+34. audit_logs
+35. website_settings
+
+DATABASE RULES:
+
+- Use UUID primary keys.
+- Use foreign keys.
+- Use appropriate unique constraints.
+- Use created_at and updated_at timestamps.
+- Use indexes for important query fields.
+- Use appropriate numeric types for money.
+- Use proper foreign key delete behaviour.
+- Use transactions for critical operations.
+- Avoid duplicate records.
+- Use soft deletion where appropriate.
+- Maintain consistent naming conventions.
+
+Never store passwords manually.
+
+Use Supabase Auth.
+
+Store user profile data separately from authentication credentials.
+
+Use proper database constraints rather than relying only on frontend validation.
+
+---
+
+# 14. SUPABASE STORAGE
+
+Create appropriate storage buckets:
+
+1. profile-photos
+2. company-logos
+3. candidate-resumes
+4. employer-documents
+5. advertisements
+
+Requirements:
+
+- Store actual files in Supabase Storage.
+- Store file paths and metadata in PostgreSQL.
+- Never store large Base64 images in the database.
+- Use private buckets for resumes and sensitive documents.
+- Use signed URLs for authorised downloads.
+- Validate file types.
+- Validate file sizes.
+- Restrict upload permissions.
+- Prevent unauthorised file access.
+
+Public company logos can use public storage only if appropriate.
+
+---
+
+# 15. AUTHENTICATION AND SECURITY
+
+Implement role-based access control.
+
+Roles:
+
+- super_admin
+- employer
+- candidate
+
+Security requirements:
+
+1. Enable RLS on every table containing application or user data.
+2. Create policies based on authenticated user identity.
+3. Candidates can access and update only their own records.
+4. Employers can access only their own company and permitted applications.
+5. Super Admin access must be securely restricted.
+6. Never trust frontend role information.
+7. Validate permissions on the server.
+8. Never expose service_role keys.
+9. Never expose Razorpay secrets.
+10. Protect sensitive API routes.
+11. Validate all user inputs.
+12. Prevent SQL injection.
+13. Prevent unauthorised data access.
+14. Apply rate limits to sensitive endpoints.
+15. Protect authentication and password reset workflows.
+
+Do not create an insecure policy that allows all authenticated users to read all records.
+
+Create and test RLS policies for every table.
+
+Use server-side authorization for all privileged operations.
+
+---
+
+# 16. NOTIFICATION SYSTEM
+
+Create a central notification system.
+
+Events:
+
+- Successful registration.
+- Employer verification.
+- Job approval.
+- Job rejection.
+- New job application.
+- Application viewed.
+- Candidate shortlisted.
+- Interview scheduled.
+- Candidate selected.
+- Subscription activated.
+- Subscription expiring.
+- Payment successful.
+- Payment failed.
+
+Provide in-app notifications.
+
+Email and WhatsApp/SMS notifications should use configurable providers.
+
+If a provider is not configured, the application must continue working without crashing.
+
+Do not display a successful delivery status when a message was not actually sent.
+
+---
+
+# 17. SEO AND PERFORMANCE
+
+Implement:
+
+- Dynamic page titles.
+- Meta descriptions.
+- Canonical URLs.
+- Sitemap.xml.
+- Robots.txt.
+- Open Graph metadata.
+- Job-specific structured data where applicable.
+- Company-specific SEO pages.
+- District-specific job pages.
+- Clean URLs.
+
+Performance:
+
+- Server-side rendering where appropriate.
+- Optimised images.
+- Lazy loading.
+- Database pagination.
+- Indexed database queries.
+- Efficient Supabase queries.
+- Proper caching.
+- Error boundaries.
+- Loading skeletons.
+
+Avoid unnecessary database requests.
+
+Do not cache private candidate or employer information publicly.
+
+---
+
+# 18. ADMIN SETTINGS
+
+Create dynamic website settings.
+
+Admin should be able to change:
+
+- Website name.
+- Logo.
+- Favicon.
+- Contact email.
+- Contact number.
+- Social media URLs.
+- Default language.
+- Currency.
+- Subscription prices.
+- Job posting limits.
+- Job expiry duration.
+- Featured job prices.
+- Advertisement settings.
+- Notification settings.
+- Maintenance mode.
+
+Do not hardcode business settings inside components.
+
+---
+
+# 19. ERROR HANDLING AND RELIABILITY
+
+Every operation must have proper:
+
+- Loading state.
+- Success message.
+- Error message.
+- Validation.
+- Retry handling where appropriate.
+- Empty state.
+- Confirmation dialog for destructive actions.
+
+Prevent:
+
+- Duplicate job applications.
+- Duplicate payment processing.
+- Duplicate credit deduction.
+- Unauthorised job edits.
+- Unauthorised resume access.
+- Invalid subscriptions.
+- Expired jobs appearing publicly.
+
+Implement reliable error logging.
+
+Never silently ignore database errors.
+
+Never show fake success messages.
+
+---
+
+# 20. TESTING REQUIREMENTS
+
+Before considering the project complete, test all major workflows.
+
+AUTHENTICATION:
+- Candidate registration.
+- Employer registration.
+- Login.
+- Logout.
+- Password reset.
+- Role-based redirects.
+
+JOB SEEKER:
+- Profile creation.
+- Resume upload.
+- Job search.
+- Save job.
+- Apply for job.
+- Application tracking.
+
+EMPLOYER:
+- Company creation.
+- Employer verification.
+- Job posting.
+- Job approval.
+- Application management.
+- Candidate search permissions.
+
+PAYMENTS:
+- Razorpay order creation.
+- Payment verification.
+- Webhook processing.
+- Subscription activation.
+- Credit deduction.
+- Failed payment.
+- Duplicate webhook prevention.
+
+ADMIN:
+- Candidate management.
+- Employer verification.
+- Job moderation.
+- Subscription management.
+- Payment reports.
+- Advertisement management.
+
+SECURITY:
+- RLS policy tests.
+- Cross-user data access tests.
+- Resume access tests.
+- Role escalation tests.
+- Payment manipulation tests.
+
+Use automated tests where practical.
+
+Test with separate candidate, employer and admin accounts.
+
+---
+
+# 21. DEVELOPMENT APPROACH
+
+Do not try to create the entire application in one unverified code generation step.
+
+Build in phases.
+
+PHASE 1 – FOUNDATION:
+- Project setup.
+- Design system.
+- Supabase connection.
+- Database migrations.
+- Authentication.
+- Role management.
+- RLS.
+
+PHASE 2 – PUBLIC WEBSITE:
+- Homepage.
+- Job listing.
+- Job details.
+- Search.
+- Filters.
+- Location pages.
+
+PHASE 3 – JOB SEEKER:
+- Registration.
+- Profile.
+- Resume.
+- Applications.
+- Saved jobs.
+
+PHASE 4 – EMPLOYER:
+- Registration.
+- Company profile.
+- Job posting.
+- Job management.
+- Application management.
+
+PHASE 5 – ADMIN:
+- Admin dashboard.
+- Employer verification.
+- Job approval.
+- Candidate management.
+- Reports.
+
+PHASE 6 – REVENUE:
+- Subscription plans.
+- Job credits.
+- Razorpay.
+- Featured jobs.
+- Advertisement management.
+
+PHASE 7 – FINALISATION:
+- Notifications.
+- SEO.
+- Performance.
+- Security audit.
+- Automated tests.
+- Deployment.
+
+After completing each phase:
+
+1. Check the application.
+2. Test the functionality.
+3. Verify Supabase database operations.
+4. Check permissions.
+5. Fix errors.
+6. Document completed work.
+7. Proceed to the next phase.
+
+Do not mark a phase complete just because the UI has been generated.
+
+---
+
+# 22. PRODUCTION DEPLOYMENT
+
+Prepare the application for production deployment.
+
+Requirements:
+
+- Production environment variables.
+- Separate development and production configurations.
+- Database migrations.
+- Secure secrets management.
+- Error monitoring.
+- Database backups.
+- Supabase RLS verification.
+- Payment webhook configuration.
+- Domain configuration.
+- HTTPS.
+- Deployment documentation.
+
+Create:
+
+- README.md
+- .env.example
+- Database migration files
+- Setup instructions
+- Deployment instructions
+- Admin setup instructions
+- Payment setup instructions
+
+Never commit real secrets or API keys.
+
+Never use production credentials in example files.
+
+---
+
+# 23. FINAL NON-NEGOTIABLE RULES
+
+1. Build a real working application.
+2. Use Supabase PostgreSQL as the primary database.
+3. Every important feature must connect to the database.
+4. Do not use localStorage as the main database.
+5. Do not create fake job listings in production.
+6. Do not create fake candidate records.
+7. Do not create fake payment transactions.
+8. Do not hardcode subscription plans.
+9. Do not hardcode Maharashtra locations throughout the application.
+10. Do not leave buttons without functionality.
+11. Do not ignore database errors.
+12. Do not disable RLS to solve application problems.
+13. Do not expose private candidate information.
+14. Do not trust frontend permissions.
+15. Do not compromise security for convenience.
+16. Keep the UI professional, clean and easy to understand.
+17. Make all pages responsive.
+18. Test actual workflows before deployment.
+19. Maintain clean, reusable and maintainable code.
+20. Document every important implementation decision.
+
+FINAL OBJECTIVE:
+
+Deliver MahaJobs as a complete, secure, professional and production-ready Maharashtra Job Portal.
+
+A first-time user should be able to understand the website without training.
+
+A job seeker should be able to register, create a profile, find a job and apply without paying anything.
+
+An employer should be able to register, purchase a plan, publish a vacancy and manage candidates.
+
+A super administrator should be able to control the entire platform.
+
+The business owner should be able to manage subscriptions, payments, featured jobs and revenue.
+
+Prioritise functionality, simplicity, security, database integrity and maintainability over visual effects.
+
+Start by inspecting the project structure and creating a clear implementation plan. Then begin development phase by phase.
