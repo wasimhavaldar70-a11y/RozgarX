@@ -934,13 +934,20 @@ export const CandidateDashboard: React.FC<CandidateDashboardProps> = ({
 
             {/* ACCOUNT SETTINGS TAB */}
             {activeTab === 'settings' && profile && (
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-                <h3 className="font-bold text-slate-900 text-base">Candidate Account Privacy</h3>
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-6">
+                <div>
+                  <h3 className="font-bold text-slate-900 text-base">Privacy & Data Management</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Exercise your data principal rights under India’s Digital Personal Data Protection (DPDP) Act 2023 & GDPR.
+                  </p>
+                </div>
+
+                {/* Discoverability Setting */}
                 <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
                   <div>
                     <p className="text-xs font-bold text-slate-800">Employer Discoverability</p>
                     <p className="text-[11px] text-slate-500">
-                      Allow verified employers with candidate search subscriptions to discover your profile.
+                      Allow verified Maharashtra employers with active recruitment subscriptions to discover your profile.
                     </p>
                   </div>
                   <input
@@ -951,8 +958,81 @@ export const CandidateDashboard: React.FC<CandidateDashboardProps> = ({
                       setProfile({ ...profile, isDiscoverable: updated });
                       db.updateCandidateProfile(profile.id, { isDiscoverable: updated });
                     }}
-                    className="w-4 h-4 accent-blue-600"
+                    className="w-4 h-4 accent-blue-600 cursor-pointer"
                   />
+                </div>
+
+                {/* Right to Data Portability */}
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-bold text-slate-800">Download My Data (Data Portability)</p>
+                    <p className="text-[11px] text-slate-500">
+                      Export a machine-readable JSON archive of your personal profile, qualifications, and application history.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const myApplications = db.getApplications({ candidateId: profile.id });
+                      const exportPayload = {
+                        exportDate: new Date().toISOString(),
+                        platform: 'RozgarX Maharashtra Employment Portal',
+                        legalFramework: 'India DPDP Act 2023 Section 11 / GDPR Article 20',
+                        candidateProfile: {
+                          id: profile.id,
+                          fullName: profile.fullName,
+                          email: profile.email,
+                          mobile: profile.mobile,
+                          district: profile.district,
+                          city: profile.city,
+                          skills: profile.skills,
+                          experience: profile.experience,
+                          education: profile.education,
+                          resumeSummary: profile.resumeSummary,
+                          preferredDistricts: profile.preferredDistricts,
+                          expectedSalary: profile.experience?.expectedSalary || 0
+                        },
+                        applications: myApplications
+                      };
+                      const blob = new Blob([JSON.stringify(exportPayload, null, 2)], { type: 'application/json' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `RozgarX_MyData_${profile.id}.json`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-100 transition-colors shadow-2xs shrink-0 cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Download JSON Archive</span>
+                  </button>
+                </div>
+
+                {/* Right to Erasure / Account Deletion */}
+                <div className="p-4 bg-rose-50/60 rounded-xl border border-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-bold text-rose-900">Delete My Account & Purge Data</p>
+                    <p className="text-[11px] text-rose-700">
+                      Permanently erase your candidate profile, resume data, and job applications (Right to Erasure - DPDP Act 2023 s.12).
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const confirmed = window.confirm(
+                        'PERMANENT ACCOUNT DELETION NOTICE\n\nAre you sure you want to permanently delete your RozgarX account?\n\nThis will purge your profile, educational history, work experience, and job applications in compliance with your Right to Erasure under Section 12 of the Digital Personal Data Protection (DPDP) Act 2023. This action is irreversible.'
+                      );
+                      if (confirmed) {
+                        db.deleteCandidateAccount(profile.id);
+                        handleSignOut();
+                      }
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 transition-colors shadow-2xs shrink-0 cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete My Account</span>
+                  </button>
                 </div>
               </div>
             )}

@@ -22,6 +22,7 @@ import { AuthModal } from './components/auth/AuthModal';
 import { PostJobModal } from './components/employer/PostJobModal';
 import { SubscriptionModal } from './components/employer/SubscriptionModal';
 import { RecruitmentRequestModal } from './components/public/RecruitmentRequestModal';
+import { CookieConsentBanner } from './components/common/CookieConsentBanner';
 import {
   PrivacyPolicyPage,
   TermsConditionsPage,
@@ -473,6 +474,8 @@ const MainAppContent: React.FC = () => {
         isOpen={recruitmentModalOpen}
         onClose={() => setRecruitmentModalOpen(false)}
       />
+
+      <CookieConsentBanner onNavigate={handleNavigate} />
     </div>
   );
 };

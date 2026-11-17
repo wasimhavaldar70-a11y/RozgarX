@@ -57,6 +57,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [companyName, setCompanyName] = useState('');
   const [industry, setIndustry] = useState('IT & Software');
 
+  // Legal, Age & Consent State (India DPDP Act 2023 & GDPR Compliant)
+  const [confirmAdult, setConfirmAdult] = useState<boolean>(false);
+  const [agreeTerms, setAgreeTerms] = useState<boolean>(false);
+
   // OTP Verification State
   const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
   const [challengeId, setChallengeId] = useState<string>('');
@@ -80,6 +84,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setOtpDigits(['', '', '', '', '', '']);
       setApprovalToken('');
       setVerifiedPhone('');
+      setConfirmAdult(false);
+      setAgreeTerms(false);
     }
   }, [isOpen, initialMode]);
 
@@ -278,8 +284,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
-    if (password.length < 6) {
-      setErrorMessage('Password must be at least 6 characters');
+    if (!confirmAdult) {
+      setErrorMessage('You must confirm you are at least 18 years of age to register (India DPDP Act 2023).');
+      return;
+    }
+
+    if (!agreeTerms) {
+      setErrorMessage('You must agree to the Terms & Conditions and Privacy Policy to create an account.');
+      return;
+    }
+
+    if (password.length < 8) {
+      setErrorMessage('Password must be at least 8 characters long for security');
       return;
     }
 
@@ -337,8 +353,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
-    if (password.length < 6) {
-      setErrorMessage('Password must be at least 6 characters');
+    if (!confirmAdult) {
+      setErrorMessage('You must confirm you are at least 18 years of age to register an employer account.');
+      return;
+    }
+
+    if (!agreeTerms) {
+      setErrorMessage('You must agree to the Terms & Conditions and Privacy Policy.');
+      return;
+    }
+
+    if (password.length < 8) {
+      setErrorMessage('Password must be at least 8 characters long for security');
       return;
     }
 
@@ -854,12 +880,58 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <input
                       type="password"
                       required
-                      minLength={6}
+                      minLength={8}
                       value={password}
                       onChange={e => setPassword(e.target.value)}
-                      placeholder="Min 6 characters"
+                      placeholder="Min 8 characters (letters & numbers)"
                       className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-600/30 focus:border-blue-600"
                     />
+                  </div>
+
+                  {/* Legal, Consent & Age Verification (India DPDP Act & GDPR Compliant) */}
+                  <div className="space-y-2 pt-2 border-t border-slate-100 text-xs text-slate-600">
+                    <label className="flex items-start gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        required
+                        checked={confirmAdult}
+                        onChange={e => setConfirmAdult(e.target.checked)}
+                        className="w-4 h-4 mt-0.5 rounded text-blue-600 focus:ring-blue-500 border-slate-300"
+                      />
+                      <span>
+                        I confirm that I am <strong>18 years of age or older</strong> (in compliance with India’s Digital Personal Data Protection Act 2023).
+                      </span>
+                    </label>
+
+                    <label className="flex items-start gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        required
+                        checked={agreeTerms}
+                        onChange={e => setAgreeTerms(e.target.checked)}
+                        className="w-4 h-4 mt-0.5 rounded text-blue-600 focus:ring-blue-500 border-slate-300"
+                      />
+                      <span>
+                        I agree to the{' '}
+                        <a
+                          href="/terms-conditions"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline font-medium"
+                        >
+                          Terms & Conditions
+                        </a>{' '}
+                        and have read the{' '}
+                        <a
+                          href="/privacy-policy"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline font-medium"
+                        >
+                          Privacy Policy
+                        </a>.
+                      </span>
+                    </label>
                   </div>
 
                   <button
@@ -1129,16 +1201,62 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <input
                       type="password"
                       required
-                      minLength={6}
+                      minLength={8}
                       value={password}
                       onChange={e => setPassword(e.target.value)}
-                      placeholder="Min 6 characters"
+                      placeholder="Min 8 characters (letters & numbers)"
                       className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-600/30 focus:border-blue-600"
                     />
                   </div>
 
                   <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-[11px] text-amber-800">
                     <strong>Note on Company Verification:</strong> Mobile verification confirms contact authenticity. Company business documents (GSTIN/Udyam) will be reviewed by Maharashtra portal admins before verified badge is granted.
+                  </div>
+
+                  {/* Legal, Consent & Age Verification (India DPDP Act & GDPR Compliant) */}
+                  <div className="space-y-2 pt-2 border-t border-slate-100 text-xs text-slate-600">
+                    <label className="flex items-start gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        required
+                        checked={confirmAdult}
+                        onChange={e => setConfirmAdult(e.target.checked)}
+                        className="w-4 h-4 mt-0.5 rounded text-blue-600 focus:ring-blue-500 border-slate-300"
+                      />
+                      <span>
+                        I confirm that I am an authorized corporate representative <strong>18 years of age or older</strong>.
+                      </span>
+                    </label>
+
+                    <label className="flex items-start gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        required
+                        checked={agreeTerms}
+                        onChange={e => setAgreeTerms(e.target.checked)}
+                        className="w-4 h-4 mt-0.5 rounded text-blue-600 focus:ring-blue-500 border-slate-300"
+                      />
+                      <span>
+                        I agree to the{' '}
+                        <a
+                          href="/terms-conditions"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline font-medium"
+                        >
+                          Employer Terms
+                        </a>{' '}
+                        and have read the{' '}
+                        <a
+                          href="/privacy-policy"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline font-medium"
+                        >
+                          Privacy Policy
+                        </a>.
+                      </span>
+                    </label>
                   </div>
 
                   <button

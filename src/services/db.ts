@@ -840,6 +840,19 @@ class DatabaseService {
     return true;
   }
 
+  /**
+   * Permanently purge candidate account and associated applications
+   * (Right to Erasure - India DPDP Act 2023 Section 12 & GDPR Article 17)
+   */
+  public deleteCandidateAccount(id: string): boolean {
+    const initialCount = this.candidates.length;
+    this.candidates = this.candidates.filter(c => c.id !== id && c.userId !== id);
+    this.applications = this.applications.filter(a => a.candidateId !== id);
+    this.persist('candidates', this.candidates);
+    this.persist('applications', this.applications);
+    return this.candidates.length < initialCount;
+  }
+
   // ==========================================
   // REAL-TIME MAHAJOBS PORTAL STATISTICS
   // ==========================================

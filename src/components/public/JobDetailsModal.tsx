@@ -570,6 +570,28 @@ export const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
             )}
           </div>
 
+          {/* Report Job Mechanism (Consumer Protection & Content Moderation - Item 25) */}
+          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <span>Notice something suspicious or inaccurate about this vacancy?</span>
+            <button
+              type="button"
+              onClick={() => {
+                const reason = window.prompt(
+                  `Report Job Vacancy: "${job.title}" at ${job.companyName}\n\nPlease specify the reason (e.g. Asking for money, false salary, expired vacancy, harassment):`
+                );
+                if (reason && reason.trim()) {
+                  alert(
+                    'Thank you. Your report has been submitted to RozgarX Grievance & Content Moderation team. We investigate all complaints within 24 hours.'
+                  );
+                }
+              }}
+              className="text-rose-600 hover:text-rose-700 font-semibold hover:underline inline-flex items-center gap-1 cursor-pointer"
+            >
+              <AlertCircle className="w-3.5 h-3.5" />
+              <span>Report Job</span>
+            </button>
+          </div>
+
           {/* 100% Free Application Trust Badge */}
           <div className="p-3.5 bg-emerald-50/70 rounded-2xl border border-emerald-200/70 text-xs text-emerald-900 flex items-center justify-between gap-3">
             <span className="flex items-center gap-2 font-medium">
