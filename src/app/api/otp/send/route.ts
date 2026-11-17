@@ -6,6 +6,7 @@ import {
 } from '@/src/lib/otpServer';
 import { checkRateLimit } from '@/src/lib/rateLimit';
 import { SendOtpSchema, validatePayload } from '@/src/lib/validation';
+import { safeErrorResponse } from '@/src/lib/safeError';
 
 export async function POST(req: NextRequest) {
   try {
@@ -153,11 +154,12 @@ export async function POST(req: NextRequest) {
     );
 
     if (challengeError || !challengeId) {
-      console.error('Failed to record OTP challenge:', challengeError?.message);
-      return NextResponse.json(
-        { success: false, error: 'Failed to create OTP verification challenge' },
-        { status: 500 }
-      );
+      return safeErrorResponse({
+        context: 'otp_send_record_challenge',
+        internalError: challengeError,
+        userMessage: 'Unable to initialize verification session. Please try again.',
+        status: 500
+      });
     }
 
     const maskedPhone = `${normalized.displayFormat.slice(0, 7)} XXX ${normalized.displayFormat.slice(-2)}`;
@@ -168,11 +170,12 @@ export async function POST(req: NextRequest) {
       resendCooldownSeconds: 60,
       expiresInSeconds: 300
     });
-  } catch (err: any) {
-    console.error('Unhandled error in /api/otp/send:', err?.message);
-    return NextResponse.json(
-      { success: false, error: 'An unexpected error occurred while sending OTP' },
-      { status: 500 }
-    );
+  } catch (err: unknown) {
+    return safeErrorResponse({
+      context: 'otp_send_unhandled',
+      internalError: err,
+      userMessage: 'An unexpected error occurred while sending OTP. Please try again.',
+      status: 500
+    });
   }
 }

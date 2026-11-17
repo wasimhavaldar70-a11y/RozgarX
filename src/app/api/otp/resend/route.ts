@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin, normalizeIndianMobile } from '@/src/lib/otpServer';
 import { checkRateLimit } from '@/src/lib/rateLimit';
 import { ResendOtpSchema, validatePayload } from '@/src/lib/validation';
+import { safeErrorResponse } from '@/src/lib/safeError';
 
 export async function POST(req: NextRequest) {
   try {
@@ -82,13 +83,12 @@ export async function POST(req: NextRequest) {
     } | null;
 
     if (!retryData || retryData.type !== 'success') {
-      return NextResponse.json(
-        {
-          success: false,
-          error: retryData?.message || 'Unable to resend OTP via MSG91'
-        },
-        { status: 502 }
-      );
+      return safeErrorResponse({
+        context: 'otp_resend_gateway_failure',
+        internalError: retryData?.message,
+        userMessage: 'SMS delivery service is momentarily unavailable. Please try again in a few moments.',
+        status: 502
+      });
     }
 
     if (challengeId) {
@@ -116,11 +116,12 @@ export async function POST(req: NextRequest) {
       message: `Fresh 6-digit OTP resent to ${normalized.displayFormat}`,
       resendCooldownSeconds: 60
     });
-  } catch (err: any) {
-    console.error('Unhandled error in /api/otp/resend:', err?.message);
-    return NextResponse.json(
-      { success: false, error: 'An unexpected error occurred while resending OTP' },
-      { status: 500 }
-    );
+  } catch (err: unknown) {
+    return safeErrorResponse({
+      context: 'otp_resend_unhandled',
+      internalError: err,
+      userMessage: 'An unexpected error occurred while resending OTP. Please try again.',
+      status: 500
+    });
   }
 }

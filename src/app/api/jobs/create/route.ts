@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { getSupabaseAdmin, getSupabaseUrl } from '@/src/lib/otpServer';
 import { checkRateLimit, withRateLimitHeaders } from '@/src/lib/rateLimit';
 import { CreateJobSchema, validatePayload } from '@/src/lib/validation';
+import { safeErrorResponse } from '@/src/lib/safeError';
 
 export async function POST(req: NextRequest) {
   try {
@@ -241,11 +242,12 @@ export async function POST(req: NextRequest) {
             .single();
 
           if (compErr || !newComp) {
-            console.error('Failed to create company record:', compErr?.message);
-            return NextResponse.json(
-              { success: false, error: 'Failed to initialize company profile.' },
-              { status: 500 }
-            );
+            return safeErrorResponse({
+              context: 'jobs_create_auto_company',
+              internalError: compErr,
+              userMessage: 'Unable to initialize employer company profile. Please try again.',
+              status: 500
+            });
           }
 
           resolvedCompanyId = newComp.id;
@@ -326,8 +328,12 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (jobErr) {
-      console.error('Database error inserting job:', jobErr.message);
-      return NextResponse.json({ success: false, error: jobErr.message }, { status: 500 });
+      return safeErrorResponse({
+        context: 'jobs_create_insert',
+        internalError: jobErr,
+        userMessage: 'Unable to publish vacancy due to an internal database error. Please try again.',
+        status: 500
+      });
     }
 
     const successRes = NextResponse.json({
@@ -344,7 +350,11 @@ export async function POST(req: NextRequest) {
     }
     return withRateLimitHeaders(successRes, ipLimit);
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : 'Unknown server error';
-    return NextResponse.json({ success: false, error: errorMsg }, { status: 500 });
+    return safeErrorResponse({
+      context: 'jobs_create_unhandled',
+      internalError: err,
+      userMessage: 'An unexpected error occurred while processing your vacancy. Please try again.',
+      status: 500
+    });
   }
 }

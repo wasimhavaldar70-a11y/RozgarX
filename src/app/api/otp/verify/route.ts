@@ -7,6 +7,7 @@ import {
 } from '@/src/lib/otpServer';
 import { checkRateLimit } from '@/src/lib/rateLimit';
 import { validatePayload, VerifyOtpSchema } from '@/src/lib/validation';
+import { safeErrorResponse } from '@/src/lib/safeError';
 
 export async function POST(req: NextRequest) {
   try {
@@ -137,11 +138,12 @@ export async function POST(req: NextRequest) {
     );
 
     if (approvalError || !approved) {
-      console.error('Failed to record registration approval:', approvalError?.message);
-      return NextResponse.json(
-        { success: false, error: 'Failed to record verification approval. Please try again.' },
-        { status: 500 }
-      );
+      return safeErrorResponse({
+        context: 'otp_verify_approval',
+        internalError: approvalError,
+        userMessage: 'Unable to record verification approval. Please request a new OTP.',
+        status: 500
+      });
     }
 
     return NextResponse.json({
@@ -152,11 +154,12 @@ export async function POST(req: NextRequest) {
       displayMobile: normalized.displayFormat,
       expiresInSeconds: 600
     });
-  } catch (err: any) {
-    console.error('Unhandled error in /api/otp/verify:', err?.message);
-    return NextResponse.json(
-      { success: false, error: 'An unexpected error occurred during OTP verification' },
-      { status: 500 }
-    );
+  } catch (err: unknown) {
+    return safeErrorResponse({
+      context: 'otp_verify_unhandled',
+      internalError: err,
+      userMessage: 'An unexpected error occurred during OTP verification. Please try again.',
+      status: 500
+    });
   }
 }

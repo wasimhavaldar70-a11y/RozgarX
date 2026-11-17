@@ -14,13 +14,23 @@ export async function GET(req: NextRequest) {
     return rateLimit.response;
   }
 
-  const response = NextResponse.json({
-    ok: true,
-    framework: 'nextjs',
-    supabaseConfigured: Boolean(getSupabaseUrl() && getSupabaseSecretKey()),
-    msg91AuthConfigured: Boolean(process.env.MSG91_AUTH_KEY),
-    msg91TemplateConfigured: Boolean(process.env.MSG91_OTP_TEMPLATE_ID)
-  });
+  const isProd = process.env.NODE_ENV === 'production';
+
+  const payload = isProd
+    ? {
+        status: 'healthy',
+        timestamp: new Date().toISOString()
+      }
+    : {
+        status: 'healthy',
+        ok: true,
+        timestamp: new Date().toISOString(),
+        supabaseConfigured: Boolean(getSupabaseUrl() && getSupabaseSecretKey()),
+        msg91AuthConfigured: Boolean(process.env.MSG91_AUTH_KEY),
+        msg91TemplateConfigured: Boolean(process.env.MSG91_OTP_TEMPLATE_ID)
+      };
+
+  const response = NextResponse.json(payload);
 
   return withRateLimitHeaders(response, rateLimit);
 }

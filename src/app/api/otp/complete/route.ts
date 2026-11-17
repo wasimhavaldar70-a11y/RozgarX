@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin, normalizeIndianMobile, sha256 } from '@/src/lib/otpServer';
 import { checkRateLimit } from '@/src/lib/rateLimit';
 import { CompleteRegistrationSchema, validatePayload } from '@/src/lib/validation';
+import { safeErrorResponse } from '@/src/lib/safeError';
 
 export async function POST(req: NextRequest) {
   const supabaseAdmin = getSupabaseAdmin();
@@ -107,10 +108,12 @@ export async function POST(req: NextRequest) {
     });
 
     if (authError || !authData.user) {
-      return NextResponse.json(
-        { success: false, error: authError?.message || 'Failed to initialize account credentials' },
-        { status: 500 }
-      );
+      return safeErrorResponse({
+        context: 'otp_complete_create_auth_user',
+        internalError: authError,
+        userMessage: 'Unable to initialize account credentials. Please try again.',
+        status: 500
+      });
     }
 
     createdAuthUserId = authData.user.id;
@@ -194,8 +197,7 @@ export async function POST(req: NextRequest) {
       },
       { status: 201 }
     );
-  } catch (err: any) {
-    console.error('Critical registration error:', err?.message);
+  } catch (err: unknown) {
     if (createdAuthUserId) {
       try {
         await supabaseAdmin.auth.admin.deleteUser(createdAuthUserId);
@@ -203,9 +205,11 @@ export async function POST(req: NextRequest) {
         console.error('Compensating cleanup failed:', cleanupErr?.message);
       }
     }
-    return NextResponse.json(
-      { success: false, error: err?.message || 'Failed to complete registration' },
-      { status: 500 }
-    );
+    return safeErrorResponse({
+      context: 'otp_complete_unhandled',
+      internalError: err,
+      userMessage: 'Unable to complete registration. Please try again or contact support.',
+      status: 500
+    });
   }
 }
