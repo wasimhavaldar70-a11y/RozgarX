@@ -4,6 +4,7 @@ import {
   getSupabaseAdmin,
   normalizeIndianMobile
 } from '@/src/lib/otpServer';
+import { checkRateLimit } from '@/src/lib/rateLimit';
 
 export async function POST(req: NextRequest) {
   try {
@@ -75,68 +76,35 @@ export async function POST(req: NextRequest) {
     }
 
     // 60-second resend cooldown
-    const { data: cooldownData } = await supabaseAdmin.rpc(
-      'check_and_increment_rate_limit',
-      {
-        p_identifier: normalized.storageFormat,
-        p_action: 'send_otp_cooldown',
-        p_max_attempts: 1,
-        p_window_seconds: 60
-      }
-    );
-    const cooldown = Array.isArray(cooldownData) ? cooldownData[0] : null;
-    if (cooldown && !cooldown.allowed) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Please wait ${cooldown.retry_after_seconds} seconds before requesting a new OTP.`
-        },
-        { status: 429 }
-      );
+    const cooldown = await checkRateLimit(req, {
+      action: 'send_otp_cooldown',
+      identifier: normalized.storageFormat,
+      maxAttempts: 1,
+      windowSeconds: 60
+    });
+    if (!cooldown.allowed && cooldown.response) {
+      return cooldown.response;
     }
 
     // Phone rate limit (3 requests per 15 minutes)
-    const { data: phoneLimitData } = await supabaseAdmin.rpc(
-      'check_and_increment_rate_limit',
-      {
-        p_identifier: normalized.storageFormat,
-        p_action: 'send_otp',
-        p_max_attempts: 3,
-        p_window_seconds: 900
-      }
-    );
-    const phoneLimit = Array.isArray(phoneLimitData) ? phoneLimitData[0] : null;
-    if (phoneLimit && !phoneLimit.allowed) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Too many OTP requests. Please wait ${Math.ceil(
-            phoneLimit.retry_after_seconds / 60
-          )} minutes before trying again.`
-        },
-        { status: 429 }
-      );
+    const phoneLimit = await checkRateLimit(req, {
+      action: 'send_otp',
+      identifier: normalized.storageFormat,
+      maxAttempts: 3,
+      windowSeconds: 900
+    });
+    if (!phoneLimit.allowed && phoneLimit.response) {
+      return phoneLimit.response;
     }
 
     // IP rate limit (10 requests per hour)
-    const { data: ipLimitData } = await supabaseAdmin.rpc(
-      'check_and_increment_rate_limit',
-      {
-        p_identifier: ipHash,
-        p_action: 'send_otp_ip',
-        p_max_attempts: 10,
-        p_window_seconds: 3600
-      }
-    );
-    const ipLimit = Array.isArray(ipLimitData) ? ipLimitData[0] : null;
-    if (ipLimit && !ipLimit.allowed) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Too many requests from your network. Please try again later.'
-        },
-        { status: 429 }
-      );
+    const ipLimit = await checkRateLimit(req, {
+      action: 'send_otp_ip',
+      maxAttempts: 10,
+      windowSeconds: 3600
+    });
+    if (!ipLimit.allowed && ipLimit.response) {
+      return ipLimit.response;
     }
 
     const msg91Res = await fetch('https://control.msg91.com/api/v5/otp', {

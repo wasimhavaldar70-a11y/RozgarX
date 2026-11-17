@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin, normalizeIndianMobile } from '@/src/lib/otpServer';
+import { checkRateLimit } from '@/src/lib/rateLimit';
 
 export async function POST(req: NextRequest) {
   try {
@@ -35,46 +36,36 @@ export async function POST(req: NextRequest) {
 
     const supabaseAdmin = getSupabaseAdmin();
 
-    const { data: cooldownData } = await supabaseAdmin.rpc(
-      'check_and_increment_rate_limit',
-      {
-        p_identifier: normalized.storageFormat,
-        p_action: 'send_otp_cooldown',
-        p_max_attempts: 1,
-        p_window_seconds: 60
-      }
-    );
-    const cooldown = Array.isArray(cooldownData) ? cooldownData[0] : null;
-    if (cooldown && !cooldown.allowed) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Please wait ${cooldown.retry_after_seconds} seconds before resending OTP.`
-        },
-        { status: 429 }
-      );
+    // IP rate limit (5 resend requests per 15 minutes)
+    const ipLimit = await checkRateLimit(req, {
+      action: 'resend_otp_ip',
+      maxAttempts: 5,
+      windowSeconds: 900
+    });
+    if (!ipLimit.allowed && ipLimit.response) {
+      return ipLimit.response;
     }
 
-    const { data: phoneLimitData } = await supabaseAdmin.rpc(
-      'check_and_increment_rate_limit',
-      {
-        p_identifier: normalized.storageFormat,
-        p_action: 'send_otp',
-        p_max_attempts: 3,
-        p_window_seconds: 900
-      }
-    );
-    const phoneLimit = Array.isArray(phoneLimitData) ? phoneLimitData[0] : null;
-    if (phoneLimit && !phoneLimit.allowed) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Too many OTP requests. Please wait ${Math.ceil(
-            phoneLimit.retry_after_seconds / 60
-          )} minutes before trying again.`
-        },
-        { status: 429 }
-      );
+    // Cooldown rate limit (1 request per 60 seconds)
+    const cooldown = await checkRateLimit(req, {
+      action: 'send_otp_cooldown',
+      identifier: normalized.storageFormat,
+      maxAttempts: 1,
+      windowSeconds: 60
+    });
+    if (!cooldown.allowed && cooldown.response) {
+      return cooldown.response;
+    }
+
+    // Phone rate limit (3 requests per 15 minutes)
+    const phoneLimit = await checkRateLimit(req, {
+      action: 'send_otp',
+      identifier: normalized.storageFormat,
+      maxAttempts: 3,
+      windowSeconds: 900
+    });
+    if (!phoneLimit.allowed && phoneLimit.response) {
+      return phoneLimit.response;
     }
 
     const retryUrl = `https://control.msg91.com/api/v5/otp/retry?mobile=${encodeURIComponent(

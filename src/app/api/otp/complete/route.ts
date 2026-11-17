@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin, normalizeIndianMobile, sha256 } from '@/src/lib/otpServer';
+import { checkRateLimit } from '@/src/lib/rateLimit';
 
 export async function POST(req: NextRequest) {
   const supabaseAdmin = getSupabaseAdmin();
@@ -37,6 +38,28 @@ export async function POST(req: NextRequest) {
         { success: false, error: 'Please enter a valid email address' },
         { status: 400 }
       );
+    }
+
+    // -------------------------------------------------------------
+    // RATE LIMITING: Prevent automated bulk account creation
+    // -------------------------------------------------------------
+    const ipLimit = await checkRateLimit(req, {
+      action: 'complete_registration_ip',
+      maxAttempts: 10,
+      windowSeconds: 3600
+    });
+    if (!ipLimit.allowed && ipLimit.response) {
+      return ipLimit.response;
+    }
+
+    const phoneLimit = await checkRateLimit(req, {
+      action: 'complete_registration_phone',
+      identifier: normalized.storageFormat,
+      maxAttempts: 3,
+      windowSeconds: 900
+    });
+    if (!phoneLimit.allowed && phoneLimit.response) {
+      return phoneLimit.response;
     }
 
     if (String(password).length < 8) {

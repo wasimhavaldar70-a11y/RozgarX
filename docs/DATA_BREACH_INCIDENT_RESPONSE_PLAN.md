@@ -79,3 +79,4 @@ Under **Section 8(6) of the Digital Personal Data Protection Act 2023**:
 - **Grievance Redressal:** [grievance-redressal](https://rozgarx.com/grievance-redressal)
 - **Legal Inquiries:** `legal@rozgarx.com`
 - **Emergency Security Contact:** `support@rozgarx.com`
+

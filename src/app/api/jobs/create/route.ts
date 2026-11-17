@@ -1,9 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getSupabaseAdmin, getSupabaseUrl } from '@/src/lib/otpServer';
+import { checkRateLimit, withRateLimitHeaders } from '@/src/lib/rateLimit';
 
 export async function POST(req: NextRequest) {
   try {
+    // -------------------------------------------------------------
+    // 0. IP BURST RATE LIMITING (15 requests / 60 seconds)
+    // -------------------------------------------------------------
+    const ipLimit = await checkRateLimit(req, {
+      action: 'jobs_create_ip',
+      maxAttempts: 15,
+      windowSeconds: 60
+    });
+    if (!ipLimit.allowed && ipLimit.response) {
+      return ipLimit.response;
+    }
+
     // -------------------------------------------------------------
     // 1. STRICT AUTHENTICATION VERIFICATION (Reject 401)
     // -------------------------------------------------------------
@@ -70,6 +83,22 @@ export async function POST(req: NextRequest) {
     }
 
     const isSuperAdmin = userRole === 'super_admin';
+
+    // -------------------------------------------------------------
+    // 2.1 USER RATE LIMITING (20 job postings / 1 hour for employers)
+    // -------------------------------------------------------------
+    let userRateResult = null;
+    if (!isSuperAdmin) {
+      userRateResult = await checkRateLimit(req, {
+        action: 'jobs_create_user',
+        identifier: authenticatedUserId,
+        maxAttempts: 20,
+        windowSeconds: 3600
+      });
+      if (!userRateResult.allowed && userRateResult.response) {
+        return userRateResult.response;
+      }
+    }
 
     // -------------------------------------------------------------
     // 3. PARSE & VALIDATE PAYLOAD
@@ -293,7 +322,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: jobErr.message }, { status: 500 });
     }
 
-    return NextResponse.json({
+    const successRes = NextResponse.json({
       success: true,
       message:
         finalStatus === 'approved'
@@ -301,6 +330,11 @@ export async function POST(req: NextRequest) {
           : 'Vacancy submitted successfully and is pending administrative review.',
       job: insertedJob
     });
+
+    if (userRateResult) {
+      return withRateLimitHeaders(successRes, userRateResult);
+    }
+    return withRateLimitHeaders(successRes, ipLimit);
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : 'Unknown server error';
     return NextResponse.json({ success: false, error: errorMsg }, { status: 500 });

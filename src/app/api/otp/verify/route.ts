@@ -5,9 +5,18 @@ import {
   normalizeIndianMobile,
   sha256
 } from '@/src/lib/otpServer';
+import { checkRateLimit } from '@/src/lib/rateLimit';
 
 export async function POST(req: NextRequest) {
   try {
+    const ipLimit = await checkRateLimit(req, {
+      action: 'verify_otp_ip',
+      maxAttempts: 15,
+      windowSeconds: 900
+    });
+    if (!ipLimit.allowed && ipLimit.response) {
+      return ipLimit.response;
+    }
     const body = (await req.json().catch(() => ({}))) as {
       challengeId?: string;
       mobile?: string;

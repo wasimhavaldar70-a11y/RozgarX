@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/src/lib/otpServer';
+import { checkRateLimit, withRateLimitHeaders } from '@/src/lib/rateLimit';
 
 // In-memory 60-second TTL cache for platform aggregate stats to protect DB under high traffic
 let cachedStats: {
@@ -8,15 +9,27 @@ let cachedStats: {
 } | null = null;
 const CACHE_TTL_MS = 60 * 1000;
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const rateLimit = await checkRateLimit(req, {
+      action: 'stats_read_ip',
+      maxAttempts: 60,
+      windowSeconds: 60,
+      failOpenOnDbError: true
+    });
+
+    if (!rateLimit.allowed && rateLimit.response) {
+      return rateLimit.response;
+    }
+
     const now = Date.now();
     if (cachedStats && now - cachedStats.cachedAt < CACHE_TTL_MS) {
-      return NextResponse.json({
+      const cachedRes = NextResponse.json({
         success: true,
         stats: cachedStats.data,
         cached: true
       });
+      return withRateLimitHeaders(cachedRes, rateLimit);
     }
 
     const supabaseAdmin = getSupabaseAdmin();
@@ -59,10 +72,11 @@ export async function GET() {
       cachedAt: now
     };
 
-    return NextResponse.json({
+    const liveRes = NextResponse.json({
       success: true,
       stats: statsData
     });
+    return withRateLimitHeaders(liveRes, rateLimit);
   } catch (error) {
     return NextResponse.json({
       success: true,

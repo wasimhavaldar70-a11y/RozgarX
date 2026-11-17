@@ -162,3 +162,4 @@ export const CookieConsentBanner: React.FC<{ onNavigate?: (view: string) => void
     </div>
   );
 };
+
