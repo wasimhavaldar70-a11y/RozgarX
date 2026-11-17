@@ -39,9 +39,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (String(password).length < 6) {
+    if (String(password).length < 8) {
       return NextResponse.json(
-        { success: false, error: 'Password must be at least 6 characters' },
+        { success: false, error: 'Password must be at least 8 characters long for security' },
         { status: 400 }
       );
     }
@@ -98,13 +98,12 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     if (existingUser) {
+      // Neutralize user enumeration (OWASP ASVS v4.0.3 Chapter 2)
       return NextResponse.json(
         {
           success: false,
           error:
-            existingUser.email === cleanEmail
-              ? 'An account with this email address already exists. Please sign in.'
-              : 'An account with this mobile number already exists. Please sign in.'
+            'Unable to complete registration with the provided credentials. If you already have an account, please proceed to Sign In.'
         },
         { status: 400 }
       );

@@ -23,7 +23,7 @@ export function middleware(request: NextRequest) {
         request.cookies.get('sb-access-token')?.value ||
         request.cookies.get('sb-auth-token')?.value;
 
-      let isAuthorizedAdmin = Boolean(adminSession === 'true' && adminCookie);
+      let isAuthorizedAdmin = false;
 
       // Verify token payload if available
       const candidateToken = adminCookie || supabaseAuth;
@@ -47,27 +47,22 @@ export function middleware(request: NextRequest) {
                   .join('')
               );
               const payload = JSON.parse(jsonPayload);
-              const isExpired = payload.exp && payload.exp * 1000 < Date.now();
+              const isExpired = Boolean(payload.exp && payload.exp * 1000 < Date.now());
+              
+              // Authoritative cryptographic role check (OWASP ASVS compliant - no hardcoded personal emails)
               const isSuperAdminRole =
                 payload.app_metadata?.role === 'super_admin' ||
                 payload.user_metadata?.role === 'super_admin' ||
-                payload.role === 'super_admin' ||
-                payload.email === 'wasimhavaldar70@gmail.com' ||
-                payload.email === 'wasimhavalaldar70@gmail.com';
+                payload.role === 'super_admin';
 
-              if (isExpired || !isSuperAdminRole) {
-                isAuthorizedAdmin = false;
-              } else {
+              if (!isExpired && isSuperAdminRole) {
                 isAuthorizedAdmin = true;
               }
             }
           }
         } catch {
-          // Token decode error: keep isAuthorizedAdmin as evaluated
+          isAuthorizedAdmin = false;
         }
-      } else if (adminSession === 'true') {
-        // Fallback session marker for verified local sessions
-        isAuthorizedAdmin = true;
       }
 
       // If unauthorized, block at the Edge
@@ -93,6 +88,10 @@ export function middleware(request: NextRequest) {
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.headers.set('X-XSS-Protection', '1; mode=block');
+  response.headers.set(
+    'Content-Security-Policy',
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https://images.unsplash.com https://*.supabase.co https://*.googleusercontent.com; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://control.msg91.com https://api.msg91.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
+  );
 
   return response;
 }

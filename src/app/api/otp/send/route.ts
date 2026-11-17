@@ -63,11 +63,12 @@ export async function POST(req: NextRequest) {
     }
 
     if (isRegistered) {
+      // Neutralize user enumeration (OWASP ASVS v4.0.3 Chapter 2)
       return NextResponse.json(
         {
           success: false,
           error:
-            'This mobile number is already registered. Please sign in or use a different number.'
+            'Unable to process registration with the provided details. If you already have an account, please proceed to Sign In.'
         },
         { status: 400 }
       );

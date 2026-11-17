@@ -7,14 +7,43 @@ async function seedRealPortalData() {
   await client.connect();
 
   // Find existing employer Nakshatra Motors or create anchor employers
-  const existingEmployer = await client.query("SELECT id, profile_id FROM employers LIMIT 1;");
+  let existingEmployer = await client.query("SELECT id, profile_id FROM employers LIMIT 1;");
   let anchorEmployerId = existingEmployer.rows[0]?.id;
   let anchorProfileId = existingEmployer.rows[0]?.profile_id;
 
   if (!anchorEmployerId) {
-    console.error('No existing employer found. Please run after registration.');
-    await client.end();
-    return;
+    console.log('No employer record in employers table. Finding employer profile to link...');
+    const empProfile = await client.query("SELECT id, email, full_name, mobile FROM profiles WHERE role = 'employer' LIMIT 1;");
+    if (empProfile.rows.length > 0) {
+      const p = empProfile.rows[0];
+      const createdEmp = await client.query(`
+        INSERT INTO employers (id, profile_id, contact_person, business_email, mobile, is_active)
+        VALUES ($1, $1, $2, $3, $4, true)
+        ON CONFLICT (id) DO UPDATE SET is_active = true
+        RETURNING id, profile_id;
+      `, [p.id, p.full_name || 'Nakshatra Motors HR', p.email, p.mobile || '919822000001']);
+      anchorEmployerId = createdEmp.rows[0].id;
+      anchorProfileId = createdEmp.rows[0].profile_id;
+      console.log(`Created anchor employer linked to profile: ${anchorEmployerId}`);
+
+      // Also create Nakshatra Motors company
+      await client.query(`
+        INSERT INTO companies (
+          employer_id, name, tagline, about, industry, company_type, company_size,
+          website, address, district, city, pincode, verification_status, contact_email, contact_phone
+        ) VALUES (
+          $1, 'Nakshatra Motors', 'Leading Automobile Dealership & Service Center',
+          'Authorized multi-brand automotive sales and workshop services across western Maharashtra.',
+          'Automobile & Workshop', 'Private Limited', '50-100',
+          'https://nakshatramotors.com', 'Plot 45, Shiroli MIDC, Kolhapur 416122',
+          'Kolhapur', 'Kolhapur', '416122', 'Verified', $2, $3
+        ) ON CONFLICT DO NOTHING;
+      `, [anchorEmployerId, p.email, p.mobile || '919822000001']);
+    } else {
+      console.error('No employer profile found in profiles table.');
+      await client.end();
+      return;
+    }
   }
 
   // 1. TOP AUTHENTIC MAHARASHTRA COMPANIES
