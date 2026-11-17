@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getSupabaseAdmin, getSupabaseUrl } from '@/src/lib/otpServer';
 import { checkRateLimit, withRateLimitHeaders } from '@/src/lib/rateLimit';
+import { CreateJobSchema, validatePayload } from '@/src/lib/validation';
 
 export async function POST(req: NextRequest) {
   try {
@@ -101,40 +102,47 @@ export async function POST(req: NextRequest) {
     }
 
     // -------------------------------------------------------------
-    // 3. PARSE & VALIDATE PAYLOAD
+    // 3. PARSE & STRICT SCHEMA VALIDATION (Zod with .strict())
     // -------------------------------------------------------------
-    const body = await req.json();
+    const rawBody = await req.json().catch(() => null);
+    if (!rawBody || typeof rawBody !== 'object') {
+      return NextResponse.json(
+        { success: false, error: 'Invalid or empty JSON request body' },
+        { status: 400 }
+      );
+    }
+
+    const validation = validatePayload(CreateJobSchema, rawBody);
+    if (!validation.success) {
+      return validation.response;
+    }
+
+    const validatedJob = validation.data;
     const {
       title,
       category,
       description,
-      responsibilities = [],
-      requiredSkills = [],
-      educationRequirement = 'Any Graduate',
-      experienceMinYears = 0,
-      experienceMaxYears = 5,
-      salaryMin = 0,
-      salaryMax = 0,
-      salaryType = 'Per Month',
-      vacancies = 1,
-      jobType = 'Full Time',
-      workMode = 'Office',
-      district = 'Pune',
-      city = 'Pune',
-      address = '',
-      companyName = 'Maharashtra Enterprise',
+      responsibilities,
+      requiredSkills,
+      educationRequirement,
+      experienceMinYears,
+      experienceMaxYears,
+      salaryMin,
+      salaryMax,
+      salaryType,
+      vacancies,
+      jobType,
+      workMode,
+      district,
+      city,
+      address,
+      companyName,
       companyId,
+      employerId,
       contactEmail,
       contactPhone,
       status: requestedStatus
-    } = body;
-
-    if (!title || !description || !district) {
-      return NextResponse.json(
-        { success: false, error: 'Missing mandatory fields: title, description, district' },
-        { status: 400 }
-      );
-    }
+    } = validatedJob;
 
     // Role Enforcement: Non-admins cannot self-approve vacancies
     const finalStatus = isSuperAdmin && requestedStatus === 'approved' ? 'approved' : 'pending';
@@ -248,8 +256,8 @@ export async function POST(req: NextRequest) {
       const isUuid = (val: string) =>
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
 
-      if (body.employerId && isUuid(body.employerId)) {
-        resolvedEmployerId = body.employerId;
+      if (employerId && isUuid(employerId)) {
+        resolvedEmployerId = employerId;
       } else {
         const { data: defaultEmp } = await supabaseAdmin
           .from('employers')

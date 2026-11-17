@@ -6,6 +6,7 @@ import {
   sha256
 } from '@/src/lib/otpServer';
 import { checkRateLimit } from '@/src/lib/rateLimit';
+import { validatePayload, VerifyOtpSchema } from '@/src/lib/validation';
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,35 +18,21 @@ export async function POST(req: NextRequest) {
     if (!ipLimit.allowed && ipLimit.response) {
       return ipLimit.response;
     }
-    const body = (await req.json().catch(() => ({}))) as {
-      challengeId?: string;
-      mobile?: string;
-      otp?: string;
-      role?: string;
-    };
-    const { challengeId, mobile, otp, role } = body;
 
-    if (!challengeId || !mobile || !otp) {
+    const rawBody = await req.json().catch(() => null);
+    if (!rawBody || typeof rawBody !== 'object') {
       return NextResponse.json(
-        { success: false, error: 'Challenge ID, mobile number, and OTP are required' },
+        { success: false, error: 'Invalid or empty JSON request body' },
         { status: 400 }
       );
     }
 
-    if (!/^\d{6}$/.test(otp.trim())) {
-      return NextResponse.json(
-        { success: false, error: 'Please enter a valid 6-digit numeric OTP' },
-        { status: 400 }
-      );
+    const validation = validatePayload(VerifyOtpSchema, rawBody);
+    if (!validation.success) {
+      return validation.response;
     }
 
-    if (role !== 'candidate' && role !== 'employer') {
-      return NextResponse.json(
-        { success: false, error: 'Invalid registration role' },
-        { status: 400 }
-      );
-    }
-
+    const { challengeId, mobile, otp, role } = validation.data;
     const normalized = normalizeIndianMobile(mobile);
     if (!normalized.isValid) {
       return NextResponse.json(

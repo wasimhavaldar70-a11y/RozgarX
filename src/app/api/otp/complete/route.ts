@@ -1,28 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin, normalizeIndianMobile, sha256 } from '@/src/lib/otpServer';
 import { checkRateLimit } from '@/src/lib/rateLimit';
+import { CompleteRegistrationSchema, validatePayload } from '@/src/lib/validation';
 
 export async function POST(req: NextRequest) {
   const supabaseAdmin = getSupabaseAdmin();
   let createdAuthUserId: string | null = null;
 
   try {
-    const body = (await req.json().catch(() => ({}))) as Record<string, any>;
-    const { role, approvalToken, email, password, mobile, district, city } = body;
-
-    if (!approvalToken || !email || !password || !mobile || !role) {
+    const rawBody = await req.json().catch(() => null);
+    if (!rawBody || typeof rawBody !== 'object') {
       return NextResponse.json(
-        { success: false, error: 'Missing required registration parameters' },
+        { success: false, error: 'Invalid or empty JSON request body' },
         { status: 400 }
       );
     }
 
-    if (role !== 'candidate' && role !== 'employer') {
-      return NextResponse.json(
-        { success: false, error: 'Invalid registration role' },
-        { status: 400 }
-      );
+    const validation = validatePayload(CompleteRegistrationSchema, rawBody);
+    if (!validation.success) {
+      return validation.response;
     }
+
+    const validatedData = validation.data;
+    const { role, approvalToken, email, password, mobile, district, city } = validatedData;
 
     const normalized = normalizeIndianMobile(mobile);
     if (!normalized.isValid) {
@@ -32,13 +32,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const cleanEmail = String(email).trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-      return NextResponse.json(
-        { success: false, error: 'Please enter a valid email address' },
-        { status: 400 }
-      );
-    }
+    const cleanEmail = email.toLowerCase();
 
     // -------------------------------------------------------------
     // RATE LIMITING: Prevent automated bulk account creation
@@ -60,37 +54,6 @@ export async function POST(req: NextRequest) {
     });
     if (!phoneLimit.allowed && phoneLimit.response) {
       return phoneLimit.response;
-    }
-
-    if (String(password).length < 8) {
-      return NextResponse.json(
-        { success: false, error: 'Password must be at least 8 characters long for security' },
-        { status: 400 }
-      );
-    }
-
-    if (!district) {
-      return NextResponse.json(
-        { success: false, error: 'Maharashtra district selection is required' },
-        { status: 400 }
-      );
-    }
-
-    if (role === 'candidate' && !String(body.fullName || '').trim()) {
-      return NextResponse.json(
-        { success: false, error: 'Full name is required' },
-        { status: 400 }
-      );
-    }
-
-    if (
-      role === 'employer' &&
-      (!String(body.contactPerson || '').trim() || !String(body.companyName || '').trim())
-    ) {
-      return NextResponse.json(
-        { success: false, error: 'Contact person and company name are required' },
-        { status: 400 }
-      );
     }
 
     const tokenHash = sha256(String(approvalToken).trim());
@@ -153,7 +116,9 @@ export async function POST(req: NextRequest) {
     createdAuthUserId = authData.user.id;
 
     const displayName =
-      role === 'candidate' ? String(body.fullName).trim() : String(body.contactPerson).trim();
+      role === 'candidate'
+        ? String(validatedData.fullName || '').trim()
+        : String(validatedData.contactPerson || '').trim();
 
     const { error: profileError } = await supabaseAdmin.from('profiles').insert({
       id: createdAuthUserId,
@@ -172,7 +137,7 @@ export async function POST(req: NextRequest) {
     if (role === 'candidate') {
       const { error: candidateError } = await supabaseAdmin.from('candidates').insert({
         profile_id: createdAuthUserId,
-        full_name: String(body.fullName).trim(),
+        full_name: String(validatedData.fullName || '').trim(),
         email: cleanEmail,
         mobile: normalized.storageFormat,
         district: String(district),
@@ -187,7 +152,7 @@ export async function POST(req: NextRequest) {
         .from('employers')
         .insert({
           profile_id: createdAuthUserId,
-          contact_person: String(body.contactPerson).trim(),
+          contact_person: String(validatedData.contactPerson || '').trim(),
           business_email: cleanEmail,
           mobile: normalized.storageFormat,
           is_active: true
@@ -201,9 +166,9 @@ export async function POST(req: NextRequest) {
 
       const { error: companyError } = await supabaseAdmin.from('companies').insert({
         employer_id: employerRecord.id,
-        name: String(body.companyName).trim(),
+        name: String(validatedData.companyName || '').trim(),
         tagline: 'Verified Employer in Maharashtra',
-        industry: String(body.industry || 'General Business'),
+        industry: String(validatedData.industry || 'General Business'),
         company_type: 'Private Limited',
         district: String(district),
         city: String(city || district),

@@ -5,23 +5,25 @@ import {
   normalizeIndianMobile
 } from '@/src/lib/otpServer';
 import { checkRateLimit } from '@/src/lib/rateLimit';
+import { SendOtpSchema, validatePayload } from '@/src/lib/validation';
 
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json().catch(() => ({}))) as {
-      mobile?: string;
-      role?: string;
-    };
-    const { mobile, role } = body;
-
-    if (role !== 'candidate' && role !== 'employer') {
+    const rawBody = await req.json().catch(() => null);
+    if (!rawBody || typeof rawBody !== 'object') {
       return NextResponse.json(
-        { success: false, error: 'Invalid registration role specified' },
+        { success: false, error: 'Invalid or empty JSON request body' },
         { status: 400 }
       );
     }
 
-    const normalized = normalizeIndianMobile(mobile || '');
+    const validation = validatePayload(SendOtpSchema, rawBody);
+    if (!validation.success) {
+      return validation.response;
+    }
+
+    const { mobile, role } = validation.data;
+    const normalized = normalizeIndianMobile(mobile);
     if (!normalized.isValid) {
       return NextResponse.json(
         { success: false, error: normalized.error },
