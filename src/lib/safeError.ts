@@ -106,3 +106,4 @@ export function safeErrorResponse(options: SafeErrorOptions): NextResponse {
     { status }
   );
 }
+

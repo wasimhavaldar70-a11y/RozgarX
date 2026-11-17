@@ -4,7 +4,7 @@
  * Enforces strict types, bounds, regexes, and rejects unauthorized extra fields (.strict()).
  */
 
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { NextResponse } from 'next/server';
 
 // ----------------------------------------------------------------------
